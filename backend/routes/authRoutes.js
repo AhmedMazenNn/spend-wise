@@ -17,6 +17,6 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 
 // Get user info (protected route)
-router.get("/getUser",protect , getUserInfo);
+router.get("/getUser", getUserInfo);
 
 module.exports = router;
