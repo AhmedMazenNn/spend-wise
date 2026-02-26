@@ -12,7 +12,7 @@ module.exports = async function auth(req, res, next) {
 
     const payload = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    const user = await User.findById(payload.sub).select("_id name email role");
+    const user = await User.findById(payload.sub).select("_id name email phone role tokenVersion");
     if (!user) return res.status(401).json({ message: "User not found" });
 
     if (user.tokenVersion !== payload.tv) {

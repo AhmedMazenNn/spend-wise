@@ -2,50 +2,29 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const User = require("../models/User");
-const RefreshToken = require("../models/RefreshToken");
 
 function signAccessToken(user) {
   return jwt.sign(
-    { sub: user._id.toString(), role: user.role, tv: user.tokenVersion },
+    { sub: user._id.toString(), role: user.role, tv: user.tokenVersion ?? 0 },
     process.env.ACCESS_TOKEN_SECRET,
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "15m" }
   );
 }
 
-
-function signRefreshToken(user, tokenId) {
+/** Stateless refresh token: includes tokenVersion so logout (tv bump) invalidates it. No DB storage. */
+function signRefreshToken(user) {
   return jwt.sign(
-    { sub: user._id.toString(), jti: tokenId },
+    {
+      sub: user._id.toString(),
+      tv: user.tokenVersion ?? 0,
+      jti: crypto.randomUUID(),
+    },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "30d" }
   );
 }
 
-function hashToken(token) {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-function getExpiryDateFromJwt(token) {
-  const decoded = jwt.decode(token);
-  // decoded.exp is seconds since epoch
-  return new Date(decoded.exp * 1000);
-}
-
-async function issueRefreshToken(user) {
-  const tokenId = crypto.randomUUID();
-  const refreshToken = signRefreshToken(user, tokenId);
-
-  await RefreshToken.create({
-    userId: user._id,
-    tokenId,
-    tokenHash: hashToken(refreshToken),
-    expiresAt: getExpiryDateFromJwt(refreshToken),
-  });
-
-  return refreshToken;
-}
-
-async function signup({ name, email, password }) {
+async function signup({ name, email, password, phone }) {
   const existing = await User.findOne({ email });
   if (existing) {
     const err = new Error("Email already in use");
@@ -54,15 +33,15 @@ async function signup({ name, email, password }) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const user = await User.create({ name, email, passwordHash });
+  const user = await User.create({ name, email, passwordHash, phone });
 
   const accessToken = signAccessToken(user);
-  const refreshToken = await issueRefreshToken(user);
+  const refreshToken = signRefreshToken(user);
 
   return {
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role },
     accessToken,
-    refreshToken, // controller will store as cookie (you can omit from body later if you want)
+    refreshToken,
   };
 }
 
@@ -82,15 +61,37 @@ async function login({ email, password }) {
   }
 
   const accessToken = signAccessToken(user);
-  const refreshToken = await issueRefreshToken(user);
+  const refreshToken = signRefreshToken(user);
 
   return {
-    user: { id: user._id, name: user.name, email: user.email, role: user.role },
+    user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role },
     accessToken,
     refreshToken,
   };
 }
 
+/** Logged-in user changes password; requires current password. Invalidates other sessions. */
+async function changePassword(userId, currentPassword, newPassword) {
+  const user = await User.findById(userId);
+  if (!user) {
+    const err = new Error("User not found");
+    err.statusCode = 401;
+    throw err;
+  }
+  const ok = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!ok) {
+    const err = new Error("Current password is incorrect");
+    err.statusCode = 401;
+    throw err;
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await User.updateOne(
+    { _id: userId },
+    { $set: { passwordHash }, $inc: { tokenVersion: 1 } }
+  );
+}
+
+/** Verify refresh JWT and check tokenVersion; issue new tokens. No DB lookup for refresh tokens. */
 async function refresh(refreshToken) {
   if (!refreshToken) {
     const err = new Error("Refresh token is required");
@@ -107,30 +108,7 @@ async function refresh(refreshToken) {
     throw err;
   }
 
-  const tokenId = payload.jti;
   const userId = payload.sub;
-
-  const tokenDoc = await RefreshToken.findOne({ tokenId, userId });
-  if (!tokenDoc) {
-    const err = new Error("Refresh token not recognized");
-    err.statusCode = 401;
-    throw err;
-  }
-
-  if (tokenDoc.revokedAt) {
-    const err = new Error("Refresh token revoked");
-    err.statusCode = 401;
-    throw err;
-  }
-
-  // extra safety: compare hash
-  if (tokenDoc.tokenHash !== hashToken(refreshToken)) {
-    const err = new Error("Refresh token mismatch");
-    err.statusCode = 401;
-    throw err;
-  }
-
-  // Rotate: revoke old token and create a new one
   const user = await User.findById(userId);
   if (!user) {
     const err = new Error("User not found");
@@ -138,14 +116,14 @@ async function refresh(refreshToken) {
     throw err;
   }
 
-  const newRefreshToken = await issueRefreshToken(user);
-  const newPayload = jwt.decode(newRefreshToken);
-
-  tokenDoc.revokedAt = new Date();
-  tokenDoc.replacedByTokenId = newPayload.jti;
-  await tokenDoc.save();
+  if (user.tokenVersion !== payload.tv) {
+    const err = new Error("Refresh token has been revoked");
+    err.statusCode = 401;
+    throw err;
+  }
 
   const newAccessToken = signAccessToken(user);
+  const newRefreshToken = signRefreshToken(user);
 
   return {
     accessToken: newAccessToken,
@@ -153,19 +131,57 @@ async function refresh(refreshToken) {
   };
 }
 
-async function logout(refreshToken) {
-  if (!refreshToken) return;
+const RESET_SECRET = process.env.RESET_TOKEN_SECRET || process.env.ACCESS_TOKEN_SECRET;
+const RESET_EXPIRY = process.env.RESET_TOKEN_EXPIRES_IN || "1h";
 
-  try {
-    const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-    const tokenDoc = await RefreshToken.findOne({ tokenId: payload.jti, userId: payload.sub });
-    if (tokenDoc && !tokenDoc.revokedAt) {
-      tokenDoc.revokedAt = new Date();
-      await tokenDoc.save();
-    }
-  } catch {
-    // If token is invalid/expired, just ignore and clear cookie in controller
+/** Forgot password: return a short-lived reset token (in production, send via email). */
+async function forgotPassword(email) {
+  const user = await User.findOne({ email: email.toLowerCase().trim() });
+  if (!user) {
+    return { message: "If an account exists for this email, a reset link would be sent." };
   }
+  const resetToken = jwt.sign(
+    { email: user.email, purpose: "password_reset", sub: user._id.toString() },
+    RESET_SECRET,
+    { expiresIn: RESET_EXPIRY }
+  );
+  return {
+    message: "If an account exists for this email, a reset link would be sent.",
+    resetToken,
+  };
 }
 
-module.exports = { signup, login, refresh, logout };
+/** Reset password: verify token and set new password. Increment tokenVersion to invalidate existing sessions. */
+async function resetPassword(token, newPassword) {
+  if (!token) {
+    const err = new Error("Reset token is required");
+    err.statusCode = 400;
+    throw err;
+  }
+  let payload;
+  try {
+    payload = jwt.verify(token, RESET_SECRET);
+  } catch {
+    const err = new Error("Invalid or expired reset token");
+    err.statusCode = 400;
+    throw err;
+  }
+  if (payload.purpose !== "password_reset") {
+    const err = new Error("Invalid reset token");
+    err.statusCode = 400;
+    throw err;
+  }
+  const user = await User.findById(payload.sub);
+  if (!user || user.email !== payload.email) {
+    const err = new Error("User not found");
+    err.statusCode = 400;
+    throw err;
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 12);
+  await User.updateOne(
+    { _id: user._id },
+    { $set: { passwordHash }, $inc: { tokenVersion: 1 } }
+  );
+}
+
+module.exports = { signup, login, refresh, forgotPassword, resetPassword, changePassword };

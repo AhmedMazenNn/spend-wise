@@ -56,6 +56,20 @@ const signupValidator = [
     .bail()
     .custom((value, { req }) => value === req.body.password)
     .withMessage("Passwords do not match"),
+
+  body("phone")
+    .exists({ checkFalsy: true })
+    .withMessage("Phone number is required")
+    .bail()
+    .isString()
+    .withMessage("Phone must be a string")
+    .bail()
+    .trim()
+    .isLength({ min: 10, max: 20 })
+    .withMessage("Phone must be between 10 and 20 characters")
+    .bail()
+    .matches(/^[+]?[\d\s\-()]+$/)
+    .withMessage("Phone can only contain digits, spaces, +, -, (, )"),
 ];
 
 const loginValidator = [
@@ -79,4 +93,86 @@ const loginValidator = [
     .withMessage("Password is required"),
 ];
 
-module.exports = { signupValidator, loginValidator };
+const forgotPasswordValidator = [
+  body("email")
+    .exists({ checkFalsy: true })
+    .withMessage("Email is required")
+    .bail()
+    .isEmail()
+    .withMessage("Valid email is required")
+    .bail()
+    .normalizeEmail(),
+];
+
+const resetPasswordValidator = [
+  body("token")
+    .exists({ checkFalsy: true })
+    .withMessage("Reset token is required"),
+  body("newPassword")
+    .exists({ checkFalsy: true })
+    .withMessage("New password is required")
+    .bail()
+    .isString()
+    .withMessage("New password must be a string")
+    .bail()
+    .isLength({ min: 8, max: 72 })
+    .withMessage("New password must be between 8 and 72 characters")
+    .bail()
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/)
+    .withMessage(
+      "Password must include uppercase, lowercase, number, and special character"
+    )
+    .bail()
+    .custom((value) => {
+      if (value.trim() !== value) throw new Error("Password cannot start or end with spaces");
+      return true;
+    }),
+  body("confirmPassword")
+    .exists({ checkFalsy: true })
+    .withMessage("Confirm password is required")
+    .bail()
+    .custom((value, { req }) => value === req.body.newPassword)
+    .withMessage("Passwords do not match"),
+];
+
+const changePasswordValidator = [
+  body("currentPassword")
+    .exists({ checkFalsy: true })
+    .withMessage("Current password is required")
+    .bail()
+    .isString()
+    .withMessage("Current password must be a string"),
+  body("newPassword")
+    .exists({ checkFalsy: true })
+    .withMessage("New password is required")
+    .bail()
+    .isString()
+    .withMessage("New password must be a string")
+    .bail()
+    .isLength({ min: 8, max: 72 })
+    .withMessage("New password must be between 8 and 72 characters")
+    .bail()
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/)
+    .withMessage(
+      "New password must include uppercase, lowercase, number, and special character"
+    )
+    .bail()
+    .custom((value) => {
+      if (value.trim() !== value) throw new Error("Password cannot start or end with spaces");
+      return true;
+    }),
+  body("confirmNewPassword")
+    .exists({ checkFalsy: true })
+    .withMessage("Confirm new password is required")
+    .bail()
+    .custom((value, { req }) => value === req.body.newPassword)
+    .withMessage("New passwords do not match"),
+];
+
+module.exports = {
+  signupValidator,
+  loginValidator,
+  forgotPasswordValidator,
+  resetPasswordValidator,
+  changePasswordValidator,
+};
