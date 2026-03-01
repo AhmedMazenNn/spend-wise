@@ -1,30 +1,36 @@
 import {
   BrowserRouter as Router,
   Routes,
-  Route,
-  Navigate,
+  Route
 } from 'react-router-dom'
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
 import Home from './pages/Dashboard/Home'
-import Report from './pages/Dashboard/Report'
+import { Report } from './pages/Dashboard/Report'
 import Transactions from './pages/Dashboard/Transactions'
-import Settings from './pages/Dashboard/Settings'
-import Admin from './pages/Dashboard/Admin'
+import { RequireAuth } from './components/RequireAuth'
+
+import { Settings } from './pages/Dashboard/Settings'
+import { Admin } from './pages/Dashboard/Admin'
+import { RequireAdmin } from './components/RequireAdmin'
 
 const App = () => {
   return (
     <div>
       <Router>
         <Routes>
-          <Route path="/" element={<Root />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Login />} />
           <Route path="/register" element={<Register />} />
+        {/* Protected Routes */}
+        <Route element={<RequireAuth />}>
           <Route path="/dashboard" element={<Home />} />
+          <Route path="/transactions" element={<Transactions />} />
           <Route path="/report" element={<Report />} />
-          <Route path="/transcations" element={<Transactions />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/admin" element={<Admin />} />
+          <Route element={<RequireAdmin />}>
+            <Route path="/admin" element={<Admin />} />
+          </Route>
+        </Route>
         </Routes>
       </Router>
     </div>
@@ -32,11 +38,3 @@ const App = () => {
 }
 
 export default App
-
-const Root = () => {
-  //check if token exists in local storage
-  const isAuthenticated = !!localStorage.getItem('token')
-
-  //redirect to dashboard if authenticated, otherwise redirect to login
-  return isAuthenticated ? <Navigate to="/dashboard" /> : <Navigate to="/login" />
-}

@@ -3,7 +3,15 @@ const User = require("../models/User");
 
 async function getAllUsers(req, res, next) {
   try {
-    const users = await User.find().select("_id name email phone role createdAt");
+    const raw = await User.find().select("_id name email phone role createdAt").lean();
+    const users = raw.map((u) => ({
+      id: u._id.toString(),
+      name: u.name,
+      email: u.email,
+      phone: u.phone,
+      role: u.role,
+      createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : null,
+    }));
     return res.status(200).json({ count: users.length, users });
   } catch (err) {
     next(err);
