@@ -30,9 +30,17 @@ function getDateRange(period, startDate, endDate) {
         end: endOfToday,
       };
     case "week": {
-      const weekAgo = new Date(today);
-      weekAgo.setDate(today.getDate() - 7);
-      return { start: weekAgo, end: endOfToday };
+      // Week runs Saturday to Friday
+      const dayOfWeek = today.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+      // Saturday=6, so days since Saturday: if Sat(6) -> 0, Sun(0) -> 1, ..., Fri(5) -> 6
+      const daysSinceSaturday = (dayOfWeek + 1) % 7;
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - daysSinceSaturday);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      return { start: weekStart, end: weekEnd };
     }
     case "month": {
       const monthAgo = new Date(today);

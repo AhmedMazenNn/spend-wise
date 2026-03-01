@@ -33,8 +33,11 @@ const getGreeting = () => {
 function Home() {
   const user = getStoredUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const now = new Date()
+  const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [filterMode, setFilterMode] = useState<FilterMode>('preset')
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('Month')
+  const [selectedMonth, setSelectedMonth] = useState(defaultMonth)
   const [customRange, setCustomRange] = useState({
     start: new Date().toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0],
@@ -53,6 +56,7 @@ function Home() {
     filterMode,
     selectedPeriod,
     customRange,
+    selectedMonth,
   )
 
   const handleExpenseAdded = () => {
@@ -100,6 +104,12 @@ function Home() {
         month: 'short',
         day: 'numeric',
       })}`
+    }
+    if (selectedPeriod === 'Month' && selectedMonth) {
+      return new Date(selectedMonth + '-01').toLocaleDateString('en-US', {
+        month: 'long',
+        year: 'numeric',
+      })
     }
     return selectedPeriod === 'All' ? 'Total' : selectedPeriod
   }
@@ -214,6 +224,20 @@ function Home() {
                   ),
                 )}
               </div>
+              {selectedPeriod === 'Month' && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center gap-2"
+                >
+                  <input
+                    type="month"
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                  />
+                </motion.div>
+              )}
               <div className="w-px h-8 bg-slate-200 mx-2" />
               <button
                 onClick={() => setFilterMode('custom')}

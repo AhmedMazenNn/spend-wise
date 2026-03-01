@@ -6,7 +6,7 @@ import {
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
 import Home from './pages/Dashboard/Home'
-import Report from './pages/Dashboard/Report'
+import { Report } from './pages/Dashboard/Report'
 import Transactions from './pages/Dashboard/Transactions'
 import { RequireAuth } from './components/RequireAuth'
 

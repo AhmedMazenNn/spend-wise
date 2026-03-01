@@ -29,6 +29,7 @@ export function useExpenseData(
   filterMode: 'preset' | 'custom',
   selectedPeriod: TimePeriod,
   customRange: { start: string; end: string },
+  selectedMonth?: string,
 ) {
   const [data, setData] = useState<{
     stats: { totalSpent: number; count: number; dailyAvg: number; highest: number; topCategory: string | null }
@@ -45,10 +46,20 @@ export function useExpenseData(
     setLoading(true)
     setError(null)
     try {
-      const params: { period: DashboardPeriod; startDate?: string; endDate?: string } =
-        filterMode === 'custom'
-          ? { period: 'custom', startDate: customRange.start, endDate: customRange.end }
-          : { period: PERIOD_MAP[selectedPeriod] }
+      let params: { period: DashboardPeriod; startDate?: string; endDate?: string }
+      if (filterMode === 'custom') {
+        params = { period: 'custom', startDate: customRange.start, endDate: customRange.end }
+      } else if (selectedPeriod === 'Month' && selectedMonth) {
+        const [year, month] = selectedMonth.split('-').map(Number)
+        const lastDay = new Date(year, month, 0).getDate()
+        params = {
+          period: 'custom',
+          startDate: `${year}-${String(month).padStart(2, '0')}-01`,
+          endDate: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
+        }
+      } else {
+        params = { period: PERIOD_MAP[selectedPeriod] }
+      }
 
       const res = await fetchDashboard(params)
       setData({
@@ -79,7 +90,7 @@ export function useExpenseData(
     } finally {
       setLoading(false)
     }
-  }, [filterMode, selectedPeriod, customRange.start, customRange.end])
+  }, [filterMode, selectedPeriod, customRange.start, customRange.end, selectedMonth])
 
   useEffect(() => {
     refetch()

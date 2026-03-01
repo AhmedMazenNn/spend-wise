@@ -289,15 +289,37 @@ export function Admin() {
   }).length
   const adminUsers = userRows.filter((u) => u.plan === 'Admin').length
 
-  // Charts (still demo for signups, but user status pie is real)
-  const signupData = useMemo(
-    () =>
-      Array.from({ length: 14 }, (_, i) => ({
-        date: `Day ${i + 1}`,
-        signups: Math.floor(Math.random() * 50) + 20,
-      })),
-    [],
-  )
+  // Daily Sign-ups from real user data (group by createdAt date)
+  const signupData = useMemo(() => {
+    const days = 14
+    const endDate = new Date()
+    endDate.setHours(23, 59, 59, 999)
+    const startDate = new Date(endDate)
+    startDate.setDate(startDate.getDate() - days + 1)
+    startDate.setHours(0, 0, 0, 0)
+
+    const countByDate: Record<string, number> = {}
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const key = d.toISOString().split('T')[0]
+      countByDate[key] = 0
+    }
+
+    users.forEach((u) => {
+      if (!u.createdAt) return
+      const d = new Date(u.createdAt)
+      if (Number.isNaN(d.getTime())) return
+      const key = d.toISOString().split('T')[0]
+      if (key in countByDate) countByDate[key] += 1
+    })
+
+    return Object.entries(countByDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, signups]) => ({
+        date: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+        dateKey: date,
+        signups,
+      }))
+  }, [users])
 
   const userStatusData = useMemo(() => {
     const inactive = totalUsers - activeUsers
@@ -408,8 +430,9 @@ export function Admin() {
                       dataKey="date"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#94A3B8', fontSize: 12 }}
+                      tick={{ fill: '#94A3B8', fontSize: 11 }}
                       dy={10}
+                      interval="preserveStartEnd"
                     />
                     <YAxis
                       axisLine={false}

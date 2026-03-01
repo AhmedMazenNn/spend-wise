@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Download,
   Search,
   ChevronDown,
   ChevronUp,
@@ -14,7 +13,6 @@ import {
   fetchExpenses,
   updateExpense,
   deleteExpense,
-  exportExpensesCsv,
 } from '../../api/expenses'
 import { fetchCategories } from '../../api/categories'
 import type { Expense } from '../../api/expenses'
@@ -56,7 +54,6 @@ export function TransactionsPage() {
     end: new Date().toISOString().split('T')[0],
   })
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [exporting, setExporting] = useState(false)
   const [editModal, setEditModal] = useState<Expense | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
 
@@ -123,28 +120,6 @@ export function TransactionsPage() {
     return { totalSpent, count, avgTransaction, highest }
   }, [filteredTransactions])
 
-  const handleExport = async () => {
-    setExporting(true)
-    try {
-      const blob = await exportExpensesCsv({
-        period: filterMode === 'custom' ? 'custom' : PERIOD_MAP[selectedPeriod],
-        startDate: filterMode === 'custom' ? customRange.start : undefined,
-        endDate: filterMode === 'custom' ? customRange.end : undefined,
-        search: searchTerm || undefined,
-      })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`
-      a.click()
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Export failed')
-    } finally {
-      setExporting(false)
-    }
-  }
-
   const handleDelete = async (id: string) => {
     try {
       await deleteExpense(id)
@@ -187,14 +162,6 @@ export function TransactionsPage() {
                 View and manage all your expenses
               </p>
             </div>
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {exporting ? 'Exporting...' : 'Export CSV'}
-            </button>
           </motion.header>
 
           {/* Date Filter */}

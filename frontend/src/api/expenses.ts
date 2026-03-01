@@ -1,5 +1,4 @@
 import { apiRequest } from './client'
-import { getToken } from './auth'
 
 export interface Expense {
   id: string
@@ -63,32 +62,3 @@ export async function deleteExpense(id: string): Promise<{ message: string }> {
   })
 }
 
-export async function exportExpensesCsv(params?: {
-  period?: string
-  startDate?: string
-  endDate?: string
-  search?: string
-}): Promise<Blob> {
-  const searchParams = new URLSearchParams()
-  if (params?.period) searchParams.set('period', params.period)
-  if (params?.startDate) searchParams.set('startDate', params.startDate)
-  if (params?.endDate) searchParams.set('endDate', params.endDate)
-  if (params?.search) searchParams.set('search', params.search)
-  const qs = searchParams.toString()
-
-  const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-  const token = getToken()
-  const headers: HeadersInit = {}
-  if (token) (headers as Record<string, string>).Authorization = `Bearer ${token}`
-
-  const res = await fetch(`${API_BASE}/api/expenses/export${qs ? `?${qs}` : ''}`, {
-    method: 'GET',
-    headers,
-    credentials: 'include',
-  })
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error((data as { message?: string })?.message ?? 'Export failed')
-  }
-  return res.blob()
-}

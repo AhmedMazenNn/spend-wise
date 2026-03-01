@@ -44,7 +44,7 @@ async function createExpense(req, res, next) {
 async function getExpenses(req, res, next) {
   try {
     const userId = req.user._id;
-    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const limit = Math.min(parseInt(req.query.limit) || 20, 5000);
     const offset = parseInt(req.query.offset) || 0;
     const period = (req.query.period || "all").toLowerCase();
     const startDate = req.query.startDate;
