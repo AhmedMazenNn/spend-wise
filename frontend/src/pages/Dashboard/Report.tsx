@@ -1,6 +1,13 @@
 import { useMemo, useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Download, ChevronDown, FileSpreadsheet, FileText, Search, Calendar } from 'lucide-react'
+import {
+  Download,
+  ChevronDown,
+  FileSpreadsheet,
+  FileText,
+  Search,
+  Calendar,
+} from 'lucide-react'
 import { Sidebar } from '../../components/Sidebar'
 import { fetchExpenses } from '../../api/expenses'
 import type { Expense } from '../../api/expenses'
@@ -123,8 +130,7 @@ export function Report() {
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const defaultDate = now.toISOString().split('T')[0]
   const firstOfMonth = `${defaultMonth}-01`
-  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .getDate()
+  const lastOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
   const defaultEnd = `${defaultMonth}-${String(lastOfMonth).padStart(2, '0')}`
 
   const [filterMode, setFilterMode] = useState<ReportFilterMode>('month')
@@ -138,15 +144,15 @@ export function Report() {
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchTerm, setSearchTerm] = useState('')
 
-  const { start, end } = getStartEndDates(
-    filterMode,
-    selectedMonth,
-    selectedDate,
-    dateRange,
-  )
+  const { start, end } = getStartEndDates(filterMode, selectedMonth, selectedDate, dateRange)
 
   const loadExpenses = useCallback(async () => {
-    if (!start || !end) return
+    if (!start || !end) {
+      setLoading(false)
+      setExpenses([])
+      return
+    }
+
     setLoading(true)
     try {
       const res = await fetchExpenses({
@@ -169,6 +175,7 @@ export function Report() {
 
   const displayExpenses = useMemo(() => {
     if (expenses.length > 0) return expenses
+    if (!start || !end) return []
     return getDummyExpensesForPeriod(start, end)
   }, [expenses, start, end])
 
@@ -197,11 +204,9 @@ export function Report() {
   }, [displayExpenses])
 
   const stats = useMemo(() => {
-    const totalSpent = filteredTransactions.reduce(
-      (acc, curr) => acc + curr.amount,
-      0,
-    )
+    const totalSpent = filteredTransactions.reduce((acc, curr) => acc + curr.amount, 0)
     const count = filteredTransactions.length
+
     let daysInPeriod = 1
     if (filterMode === 'month') {
       const [year, month] = selectedMonth.split('-')
@@ -212,26 +217,27 @@ export function Report() {
       const diffTime = Math.abs(endD.getTime() - startD.getTime())
       daysInPeriod = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
     }
-    const dailyAvg =
-      totalSpent / (count > 0 ? Math.min(count, daysInPeriod) : 1)
+
+    const dailyAvg = totalSpent / (count > 0 ? Math.min(count, daysInPeriod) : 1)
+
     const dailyTotals: Record<string, number> = {}
     filteredTransactions.forEach((tx) => {
       dailyTotals[tx.date] = (dailyTotals[tx.date] || 0) + tx.amount
     })
+
     let highestDay = { date: '', amount: 0 }
     Object.entries(dailyTotals).forEach(([date, amount]) => {
       if (amount > highestDay.amount) highestDay = { date, amount }
     })
+
     const categories: Record<string, number> = {}
     filteredTransactions.forEach((tx) => {
       categories[tx.category] = (categories[tx.category] || 0) + tx.amount
     })
-    const topCategoryEntry = Object.entries(categories).sort(
-      (a, b) => b[1] - a[1],
-    )[0]
-    const topCategory = topCategoryEntry
-      ? { name: topCategoryEntry[0], amount: topCategoryEntry[1] }
-      : null
+
+    const topCategoryEntry = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]
+    const topCategory = topCategoryEntry ? { name: topCategoryEntry[0], amount: topCategoryEntry[1] } : null
+
     const categoryList = Object.entries(categories)
       .map(([name, amount]) => ({
         name,
@@ -251,35 +257,26 @@ export function Report() {
                     : 'bg-slate-400',
       }))
       .sort((a, b) => b.amount - a.amount)
+
     const dailyMap: Record<string, number> = {}
     filteredTransactions.forEach((tx) => {
       dailyMap[tx.date] = (dailyMap[tx.date] || 0) + tx.amount
     })
+
     const dailySpending = Object.entries(dailyMap)
       .map(([date, amount]) => ({ date, amount }))
       .sort((a, b) => a.date.localeCompare(b.date))
+
     const categoryData = categoryList.map((c) => ({
       name: c.name,
       value: c.amount,
       color: CATEGORY_COLORS[c.name] ?? '#94A3B8',
     }))
-    return {
-      totalSpent,
-      dailyAvg,
-      highestDay,
-      topCategory,
-      categoryList,
-      dailySpending,
-      categoryData,
-    }
+
+    return { totalSpent, dailyAvg, highestDay, topCategory, categoryList, dailySpending, categoryData }
   }, [filteredTransactions, filterMode, selectedMonth, dateRange])
 
-  const periodLabel = getPeriodLabel(
-    filterMode,
-    selectedMonth,
-    selectedDate,
-    dateRange,
-  )
+  const periodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange)
 
   const handleExportPDF = async () => {
     setExporting('pdf')
@@ -317,26 +314,22 @@ export function Report() {
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
+      doc.text(`Total Spent: $${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, margin, y)
+      y += 6
+      doc.text(`Daily Average: $${stats.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, margin, y)
+      y += 6
       doc.text(
-        `Total Spent: $${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        `Highest Day: $${stats.highestDay.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}${
+          stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString()})` : ''
+        }`,
         margin,
         y,
       )
       y += 6
       doc.text(
-        `Daily Average: $${stats.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
-        margin,
-        y,
-      )
-      y += 6
-      doc.text(
-        `Highest Day: $${stats.highestDay.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}${stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString()})` : ''}`,
-        margin,
-        y,
-      )
-      y += 6
-      doc.text(
-        `Top Category: ${stats.topCategory?.name || '-'}${stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })})` : ''}`,
+        `Top Category: ${stats.topCategory?.name || '-'}${
+          stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })})` : ''
+        }`,
         margin,
         y,
       )
@@ -351,18 +344,13 @@ export function Report() {
         autoTable(doc, {
           startY: y,
           head: [['Date', 'Title', 'Category', 'Amount ($)', 'Note']],
-          body: filteredTransactions.map((tx) => [
-            tx.date,
-            tx.title,
-            tx.category,
-            tx.amount.toFixed(2),
-            tx.note || '',
-          ]),
+          body: filteredTransactions.map((tx) => [tx.date, tx.title, tx.category, tx.amount.toFixed(2), tx.note || '']),
           theme: 'striped',
           headStyles: { fillColor: [16, 185, 129], textColor: 255 },
           margin: { left: margin, right: margin },
           styles: { fontSize: 9 },
         })
+
         y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
       }
 
@@ -379,11 +367,7 @@ export function Report() {
         autoTable(doc, {
           startY: y,
           head: [['Category', 'Amount ($)', 'Percentage']],
-          body: stats.categoryList.map((cat) => [
-            cat.name,
-            cat.amount.toFixed(2),
-            `${cat.percentage.toFixed(1)}%`,
-          ]),
+          body: stats.categoryList.map((cat) => [cat.name, cat.amount.toFixed(2), `${cat.percentage.toFixed(1)}%`]),
           theme: 'striped',
           headStyles: { fillColor: [16, 185, 129], textColor: 255 },
           margin: { left: margin, right: margin },
@@ -391,8 +375,7 @@ export function Report() {
         })
       }
 
-      const filename = `expense-report-${start}-to-${end}.pdf`
-      doc.save(filename)
+      doc.save(`expense-report-${start}-to-${end}.pdf`)
     } catch (e) {
       alert(e instanceof Error ? e.message : 'PDF export failed')
     } finally {
@@ -419,37 +402,23 @@ export function Report() {
         ['Top Category', stats.topCategory?.name || '-'],
         ['Top Category Amount', stats.topCategory ? `$${stats.topCategory.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'],
       ]
-      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData)
-      XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary')
 
       const txData = [
         ['Date', 'Title', 'Category', 'Amount', 'Note'],
-        ...filteredTransactions.map((tx) => [
-          tx.date,
-          tx.title,
-          tx.category,
-          tx.amount,
-          tx.note || '',
-        ]),
+        ...filteredTransactions.map((tx) => [tx.date, tx.title, tx.category, tx.amount, tx.note || '']),
       ]
-      const wsTx = XLSX.utils.aoa_to_sheet(txData)
-      XLSX.utils.book_append_sheet(wb, wsTx, 'Transactions')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(txData), 'Transactions')
 
       if (stats.categoryList.length > 0) {
         const catData = [
           ['Category', 'Amount', 'Percentage'],
-          ...stats.categoryList.map((cat) => [
-            cat.name,
-            cat.amount,
-            `${cat.percentage.toFixed(1)}%`,
-          ]),
+          ...stats.categoryList.map((cat) => [cat.name, cat.amount, `${cat.percentage.toFixed(1)}%`]),
         ]
-        const wsCat = XLSX.utils.aoa_to_sheet(catData)
-        XLSX.utils.book_append_sheet(wb, wsCat, 'Categories')
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catData), 'Categories')
       }
 
-      const filename = `expense-report-${start}-to-${end}.xlsx`
-      XLSX.writeFile(wb, filename)
+      XLSX.writeFile(wb, `expense-report-${start}-to-${end}.xlsx`)
     } catch (e) {
       alert(e instanceof Error ? e.message : 'Excel export failed')
     } finally {
@@ -457,6 +426,7 @@ export function Report() {
     }
   }
 
+  // ✅ These variants are now used ONLY for the "loaded content" container
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -470,30 +440,24 @@ export function Report() {
     <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-emerald-50/30">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-8"
-        >
-          <motion.header variants={itemVariants} className="space-y-6">
+      {/* ✅ responsive left spacing so layout doesn't break */}
+      <main className="flex-1 ml-0 md:ml-64 p-8 overflow-y-auto h-screen">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header stays visible always */}
+          <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold font-heading text-slate-900 drop-shadow-sm">
-                    Expense Report
-                  </h1>
+                  <h1 className="text-3xl font-bold font-heading text-slate-900 drop-shadow-sm">Expense Report</h1>
                   {isDemoData && (
                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
                       Demo data
                     </span>
                   )}
                 </div>
-                <p className="text-slate-600 mt-1 font-medium">
-                  Detailed analysis of your spending habits
-                </p>
+                <p className="text-slate-600 mt-1 font-medium">Detailed analysis of your spending habits</p>
               </div>
+
               <div className="relative">
                 <button
                   onClick={() => setExportDropdown((v) => !v)}
@@ -501,15 +465,13 @@ export function Report() {
                   className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 disabled:opacity-50"
                 >
                   <Download className="w-5 h-5" />
-                  {exporting ? `${exporting === 'pdf' ? 'Exporting PDF...' : 'Exporting Excel...'}` : 'Export'}
+                  {exporting ? (exporting === 'pdf' ? 'Exporting PDF...' : 'Exporting Excel...') : 'Export'}
                   <ChevronDown className="w-4 h-4" />
                 </button>
+
                 {exportDropdown && (
                   <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setExportDropdown(false)}
-                    />
+                    <div className="fixed inset-0 z-10" onClick={() => setExportDropdown(false)} />
                     <div className="absolute right-0 mt-1 py-1 bg-white rounded-xl shadow-lg border border-slate-200 z-20 min-w-[180px]">
                       <button
                         onClick={handleExportPDF}
@@ -536,19 +498,25 @@ export function Report() {
               <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
                 <button
                   onClick={() => setFilterMode('month')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filterMode === 'month' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    filterMode === 'month' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
                   Month
                 </button>
                 <button
                   onClick={() => setFilterMode('date')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filterMode === 'date' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    filterMode === 'date' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
                   Specific Date
                 </button>
                 <button
                   onClick={() => setFilterMode('range')}
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filterMode === 'range' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                    filterMode === 'range' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
                   Date Range
                 </button>
@@ -579,18 +547,14 @@ export function Report() {
                   <input
                     type="date"
                     value={dateRange.start}
-                    onChange={(e) =>
-                      setDateRange((prev) => ({ ...prev, start: e.target.value }))
-                    }
+                    onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
                     className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
                   />
                   <span className="text-slate-400">to</span>
                   <input
                     type="date"
                     value={dateRange.end}
-                    onChange={(e) =>
-                      setDateRange((prev) => ({ ...prev, end: e.target.value }))
-                    }
+                    onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
                     className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
                   />
                 </div>
@@ -601,64 +565,47 @@ export function Report() {
           {loading ? (
             <div className="text-center py-16 text-slate-600 font-medium">Loading report...</div>
           ) : (
-            <>
+            // ✅ Key part: loaded content has its own motion container, so it animates correctly on mount
+            <motion.div
+              key={`${start}-${end}`} // re-run animation when period changes
+              initial="hidden"
+              animate="visible"
+              variants={containerVariants}
+              className="space-y-8"
+            >
               {/* Summary Stats */}
-              <motion.div
-                variants={itemVariants}
-                className="grid grid-cols-1 md:grid-cols-4 gap-6"
-              >
+              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
                   {
                     label: 'Total Spent',
-                    value: `$${stats.totalSpent.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                    })}`,
+                    value: `$${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
                     color: 'text-slate-900',
                   },
                   {
                     label: 'Daily Average',
-                    value: `$${stats.dailyAvg.toLocaleString(undefined, {
-                      maximumFractionDigits: 2,
-                    })}`,
+                    value: `$${stats.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
                     color: 'text-slate-900',
                   },
                   {
                     label: 'Highest Day',
-                    value: `$${stats.highestDay.amount.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                    })}`,
+                    value: `$${stats.highestDay.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
                     sub: stats.highestDay.date
-                      ? new Date(stats.highestDay.date).toLocaleDateString(
-                          undefined,
-                          { month: 'short', day: 'numeric' },
-                        )
+                      ? new Date(stats.highestDay.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                       : '-',
                     color: 'text-red-500',
                   },
                   {
                     label: 'Top Category',
                     value: stats.topCategory?.name || '-',
-                    sub: stats.topCategory
-                      ? `${Math.round((stats.topCategory.amount / stats.totalSpent) * 100)}%`
-                      : '-',
+                    sub: stats.topCategory ? `${Math.round((stats.topCategory.amount / stats.totalSpent) * 100)}%` : '-',
                     color: 'text-emerald-600',
                   },
                 ].map((stat, i) => (
                   <div key={i} className="bg-white p-6 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/80">
-                    <p className="text-slate-500 text-sm font-medium mb-2">
-                      {stat.label}
-                    </p>
+                    <p className="text-slate-500 text-sm font-medium mb-2">{stat.label}</p>
                     <div className="flex items-baseline gap-2">
-                      <h3
-                        className={`text-2xl font-bold font-heading ${stat.color}`}
-                      >
-                        {stat.value}
-                      </h3>
-                      {stat.sub && (
-                        <span className="text-sm text-slate-400 font-medium">
-                          {stat.sub}
-                        </span>
-                      )}
+                      <h3 className={`text-2xl font-bold font-heading ${stat.color}`}>{stat.value}</h3>
+                      {stat.sub && <span className="text-sm text-slate-400 font-medium">{stat.sub}</span>}
                     </div>
                   </div>
                 ))}
@@ -670,9 +617,7 @@ export function Report() {
                   variants={itemVariants}
                   className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/80"
                 >
-                  <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
-                    Spending Over Time
-                  </h3>
+                  <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">Spending Over Time</h3>
                   <div className="h-[260px] w-full">
                     {stats.dailySpending.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -690,10 +635,7 @@ export function Report() {
                             tickLine={false}
                             tick={{ fill: '#94A3B8', fontSize: 11 }}
                             tickFormatter={(v) =>
-                              new Date(v).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                              })
+                              new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
                             }
                           />
                           <YAxis
@@ -709,39 +651,21 @@ export function Report() {
                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                             }}
                             labelFormatter={(v) =>
-                              new Date(v).toLocaleDateString(undefined, {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                              })
+                              new Date(v).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
                             }
                             formatter={(v) => [`$${Number(v).toFixed(2)}`, 'Spent']}
                           />
-                          <Area
-                            type="monotone"
-                            dataKey="amount"
-                            stroke="#059669"
-                            strokeWidth={2}
-                            fillOpacity={1}
-                            fill="url(#reportColorAmount)"
-                          />
+                          <Area type="monotone" dataKey="amount" stroke="#059669" strokeWidth={2} fillOpacity={1} fill="url(#reportColorAmount)" />
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                        No spending data for this period
-                      </div>
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">No spending data for this period</div>
                     )}
                   </div>
                 </motion.div>
 
-                <motion.div
-                  variants={itemVariants}
-                  className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/80"
-                >
-                  <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">
-                    By Category
-                  </h3>
+                <motion.div variants={itemVariants} className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/80">
+                  <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">By Category</h3>
                   <div className="h-[220px] w-full relative">
                     {stats.categoryData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -771,24 +695,17 @@ export function Report() {
                         </PieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">
-                        No categories
-                      </div>
+                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">No categories</div>
                     )}
                   </div>
+
                   <div className="mt-3 space-y-1.5 max-h-24 overflow-y-auto">
                     {stats.categoryData.slice(0, 5).map((item) => (
                       <div key={item.name} className="flex items-center gap-2 text-xs">
-                        <span
-                          className="w-2 h-2 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: item.color }}
-                        />
+                        <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
                         <span className="text-slate-600 truncate">{item.name}</span>
                         <span className="text-slate-400 ml-auto">
-                          {stats.totalSpent > 0
-                            ? Math.round((item.value / stats.totalSpent) * 100)
-                            : 0}
-                          %
+                          {stats.totalSpent > 0 ? Math.round((item.value / stats.totalSpent) * 100) : 0}%
                         </span>
                       </div>
                     ))}
@@ -797,13 +714,8 @@ export function Report() {
               </div>
 
               {/* Category Breakdown Bars */}
-              <motion.div
-                variants={itemVariants}
-                className="bg-white rounded-2xl p-8 shadow-lg shadow-slate-200/50 border border-slate-200/80"
-              >
-                <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
-                  Category Breakdown
-                </h3>
+              <motion.div variants={itemVariants} className="bg-white rounded-2xl p-8 shadow-lg shadow-slate-200/50 border border-slate-200/80">
+                <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">Category Breakdown</h3>
                 <div className="space-y-6">
                   {stats.categoryList.length > 0 ? (
                     stats.categoryList.map((cat) => (
@@ -811,16 +723,14 @@ export function Report() {
                         <div className="flex justify-between text-sm font-medium mb-2">
                           <span className="text-slate-700">{cat.name}</span>
                           <span className="text-slate-900">
-                            $
-                            {cat.amount.toLocaleString(undefined, {
-                              minimumFractionDigits: 2,
-                            })}
+                            ${cat.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                         <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             whileInView={{ width: `${cat.percentage}%` }}
+                            viewport={{ once: true, amount: 0.2 }}
                             transition={{ duration: 1, ease: 'easeOut' }}
                             className={`h-full rounded-full ${cat.color}`}
                           />
@@ -828,9 +738,7 @@ export function Report() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-slate-500">
-                      No expenses found for this period.
-                    </div>
+                    <div className="text-center py-8 text-slate-500">No expenses found for this period.</div>
                   )}
                 </div>
               </motion.div>
@@ -838,9 +746,7 @@ export function Report() {
               {/* Filters + Transactions List */}
               <motion.div variants={itemVariants} className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
-                  <h3 className="text-lg font-bold font-heading text-slate-900">
-                    Transactions
-                  </h3>
+                  <h3 className="text-lg font-bold font-heading text-slate-900">Transactions</h3>
                   <div className="flex flex-wrap gap-2 items-center">
                     <div className="relative flex-1 sm:flex-initial sm:w-56">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -852,12 +758,17 @@ export function Report() {
                         className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none transition-colors"
                       />
                     </div>
+
                     <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                       {categoryOptions.map((cat) => (
                         <button
                           key={cat}
                           onClick={() => setSelectedCategory(cat)}
-                          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${selectedCategory === cat ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50'}`}
+                          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                            selectedCategory === cat
+                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                              : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50'
+                          }`}
                         >
                           {cat}
                         </button>
@@ -865,50 +776,41 @@ export function Report() {
                     </div>
                   </div>
                 </div>
+
                 <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/80 overflow-hidden">
                   <div className="divide-y divide-slate-200 max-h-[400px] overflow-y-auto">
                     {filteredTransactions.map((tx) => (
-                      <div
-                        key={tx.id}
-                        className="flex items-center gap-4 p-4 hover:bg-emerald-50/50 transition-colors"
-                      >
-                        <div
-                          className={`w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${getCategoryBg(tx.category)}`}
-                        >
+                      <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-emerald-50/50 transition-colors">
+                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${getCategoryBg(tx.category)}`}>
                           {tx.emoji}
                         </div>
+
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 truncate">
-                            {tx.title}
-                          </h4>
+                          <h4 className="font-semibold text-slate-900 truncate">{tx.title}</h4>
                           <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-500">
                             <Calendar className="w-3.5 h-3.5" />
                             {tx.date}
-                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">
-                              {tx.category}
-                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">{tx.category}</span>
                           </div>
                         </div>
+
                         <div className="text-right flex-shrink-0">
-                          <span className="font-bold text-slate-900">
-                            -${tx.amount.toFixed(2)}
-                          </span>
+                          <span className="font-bold text-slate-900">-${tx.amount.toFixed(2)}</span>
                         </div>
                       </div>
                     ))}
                   </div>
+
                   {filteredTransactions.length === 0 && (
                     <div className="text-center py-12 text-slate-500">
-                      {displayExpenses.length === 0
-                        ? 'No expenses found for this period.'
-                        : 'No transactions match your filters.'}
+                      {displayExpenses.length === 0 ? 'No expenses found for this period.' : 'No transactions match your filters.'}
                     </div>
                   )}
                 </div>
               </motion.div>
-            </>
+            </motion.div>
           )}
-        </motion.div>
+        </div>
       </main>
     </div>
   )
