@@ -1,5 +1,5 @@
 // src/pages/Settings/Settings.tsx
-import  { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { logout } from '../../api/auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '../../components/Sidebar'
@@ -34,17 +34,14 @@ export function Settings() {
 
   const [toast, setToast] = useState<string | null>(null)
 
-  // Profile fields (real)
   const [name, setName] = useState(stored?.name ?? '')
   const [email, setEmail] = useState(stored?.email ?? '')
   const [phone, setPhone] = useState(stored?.phone ?? '')
 
-  // Password fields (optional)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
 
-  // Delete confirm modal
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -93,15 +90,13 @@ export function Settings() {
     setProfileError(null)
     try {
       const res = await updateMe({ name, email, phone })
-      // keep local cached user in sync
       const existing = getStoredUser()
       if (existing) {
         localStorage.setItem('user', JSON.stringify(res.user))
       }
       showToast('Profile updated successfully.')
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : 'Failed to update profile.'
+      const msg = err instanceof Error ? err.message : 'Failed to update profile.'
       setProfileError(msg)
     } finally {
       setSavingProfile(false)
@@ -117,39 +112,34 @@ export function Settings() {
       setProfileError('New passwords do not match.')
       return
     }
-  
+
     setSavingPassword(true)
     setProfileError(null)
-  
+
     try {
       await changePassword({
         currentPassword,
         newPassword,
         confirmNewPassword: confirmPassword,
       })
-  
-      // Clear fields
+
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-  
-      // ✅ Clear local auth first (so guards won't keep you "logged in")
+
       localStorage.removeItem('token')
       localStorage.removeItem('user')
-  
-      // ✅ Try server logout, but don't block redirect if it fails (401 token revoked etc.)
+
       try {
         await logout()
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (e) {
         // ignore
       }
-  
-      // ✅ Redirect no matter what
+
       navigate('/', { replace: true, state: { passwordChanged: true } })
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : 'Failed to change password.'
+      const msg = err instanceof Error ? err.message : 'Failed to change password.'
       setProfileError(msg)
     } finally {
       setSavingPassword(false)
@@ -161,13 +151,11 @@ export function Settings() {
     setDeleteError(null)
     try {
       await deleteMe()
-      // deleteMe will succeed then token is now invalid; clear local state
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       navigate('/', { replace: true })
     } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : 'Failed to delete account.'
+      const msg = err instanceof Error ? err.message : 'Failed to delete account.'
       setDeleteError(msg)
     } finally {
       setDeleteLoading(false)
@@ -179,19 +167,25 @@ export function Settings() {
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
+      {/* ✅ Responsive main: no ml on mobile, add top padding for mobile top bar, responsive padding */}
+      <main className="flex-1 lg:ml-64 pt-20 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ staggerChildren: 0.1 }}
-          className="max-w-4xl mx-auto space-y-8 pb-12"
+          className="max-w-4xl mx-auto space-y-6 sm:space-y-8 pb-12"
         >
           {/* Header */}
-          <motion.header initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
-            <h1 className="text-3xl font-bold font-heading text-slate-900">
+          <motion.header
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+          >
+            <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
               Settings
             </h1>
-            <p className="text-slate-500 mt-1">Manage your account</p>
+            <p className="text-slate-500 mt-1 text-sm sm:text-base">
+              Manage your account
+            </p>
           </motion.header>
 
           {/* Toast */}
@@ -219,11 +213,11 @@ export function Settings() {
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-2xl p-8 shadow-card"
+            className="bg-white rounded-2xl p-5 sm:p-8 shadow-card"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-heading text-slate-900">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold font-heading text-slate-900">
                   Profile Information
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">
@@ -234,7 +228,7 @@ export function Settings() {
               <button
                 onClick={handleSaveProfile}
                 disabled={profileLoading || savingProfile}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
                 {savingProfile ? 'Saving…' : 'Save'}
@@ -242,25 +236,22 @@ export function Settings() {
             </div>
 
             <div className="mt-8 flex flex-col md:flex-row gap-8">
-              {/* Avatar (UI only for now) */}
+              {/* Avatar */}
               <div className="flex flex-col items-center gap-4">
                 <div className="relative group cursor-not-allowed">
-                  <div className="w-32 h-32 rounded-full bg-emerald-100 flex items-center justify-center text-4xl font-bold text-emerald-700 border-4 border-white shadow-lg overflow-hidden">
+                  <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-emerald-100 flex items-center justify-center text-3xl sm:text-4xl font-bold text-emerald-700 border-4 border-white shadow-lg overflow-hidden">
                     {initials}
                   </div>
-                  
                 </div>
                 <button
                   type="button"
                   className="text-sm font-medium text-slate-400 cursor-not-allowed"
                   title="Avatar upload not implemented yet"
-                >
-                  
-                </button>
+                />
               </div>
 
               {/* Form Fields */}
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-1 md:col-span-2">
                   <label className="text-sm font-medium text-slate-600">
                     Full Name
@@ -307,11 +298,11 @@ export function Settings() {
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-2xl p-8 shadow-card"
+            className="bg-white rounded-2xl p-5 sm:p-8 shadow-card"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold font-heading text-slate-900">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="min-w-0">
+                <h2 className="text-lg sm:text-xl font-bold font-heading text-slate-900">
                   Security
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">
@@ -322,14 +313,14 @@ export function Settings() {
               <button
                 onClick={handleChangePassword}
                 disabled={savingPassword}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-950 disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-950 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
                 {savingPassword ? 'Updating…' : 'Update Password'}
               </button>
             </div>
 
-            <div className="mt-6 max-w-md space-y-4">
+            <div className="mt-6 w-full max-w-md space-y-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-slate-600">
                   Current Password
@@ -371,13 +362,13 @@ export function Settings() {
             </div>
           </motion.div>
 
-          {/* Danger Zone (Delete Account) */}
+          {/* Danger Zone */}
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-red-50/50 rounded-2xl p-8 shadow-sm border border-red-200"
+            className="bg-red-50/50 rounded-2xl p-5 sm:p-8 shadow-sm border border-red-200"
           >
-            <h2 className="text-xl font-bold font-heading text-red-700 mb-2">
+            <h2 className="text-lg sm:text-xl font-bold font-heading text-red-700 mb-2">
               Danger Zone
             </h2>
             <p className="text-red-600/80 mb-6 text-sm">
@@ -387,7 +378,7 @@ export function Settings() {
 
             <button
               onClick={() => setDeleteOpen(true)}
-              className="flex items-center gap-2 px-6 py-3 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 hover:border-red-300 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 hover:border-red-300 transition-colors"
             >
               <Trash2 className="w-5 h-5" />
               Delete Account
@@ -405,7 +396,6 @@ export function Settings() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Backdrop */}
             <button
               type="button"
               className="absolute inset-0 bg-black/50"
@@ -413,7 +403,6 @@ export function Settings() {
               aria-label="Close delete dialog"
             />
 
-            {/* Dialog */}
             <motion.div
               className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -450,12 +439,12 @@ export function Settings() {
                   </p>
                 )}
 
-                <div className="mt-5 flex gap-3 justify-end">
+                <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-end">
                   <button
                     type="button"
                     onClick={() => setDeleteOpen(false)}
                     disabled={deleteLoading}
-                    className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                   >
                     Cancel
                   </button>
@@ -463,7 +452,7 @@ export function Settings() {
                     type="button"
                     onClick={handleDeleteAccount}
                     disabled={deleteLoading}
-                    className="px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
                   >
                     {deleteLoading ? 'Deleting…' : 'Delete'}
                   </button>

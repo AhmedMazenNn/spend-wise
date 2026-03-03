@@ -99,7 +99,9 @@ export function TransactionsPage() {
   }, [loadExpenses])
 
   useEffect(() => {
-    fetchCategories().then((r) => setCategories(r.categories)).catch(() => setCategories([]))
+    fetchCategories()
+      .then((r) => setCategories(r.categories))
+      .catch(() => setCategories([]))
   }, [])
 
   const categoryFilterOptions = useMemo(() => {
@@ -143,7 +145,8 @@ export function TransactionsPage() {
     <div className="flex min-h-screen bg-main">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
+      {/* ✅ responsive spacing with sidebar */}
+      <main className="flex-1 ml-0 md:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -152,13 +155,13 @@ export function TransactionsPage() {
         >
           <motion.header
             variants={itemVariants}
-            className="flex justify-between items-end mb-8"
+            className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6 sm:mb-8"
           >
-            <div>
-              <h1 className="text-3xl font-bold font-heading text-slate-900">
+            <div className="min-w-0">
+              <h1 className="text-2xl mt-15 lg:ml-0 sm:text-3xl font-bold font-heading text-slate-900">
                 Transactions
               </h1>
-              <p className="text-slate-500 mt-1">
+              <p className="text-slate-500 mt-1 text-sm sm:text-base">
                 View and manage all your expenses
               </p>
             </div>
@@ -166,62 +169,74 @@ export function TransactionsPage() {
 
           {/* Date Filter */}
           <motion.div variants={itemVariants} className="space-y-4">
-            <div className="flex flex-wrap gap-2 items-center">
-              <div className="flex gap-2 bg-slate-100 p-1 rounded-full">
-                {(['Today', 'Week', 'Month', 'All'] as TimePeriod[]).map(
-                  (period) => (
-                    <button
-                      key={period}
-                      onClick={() => {
-                        setFilterMode('preset')
-                        setSelectedPeriod(period)
-                      }}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${filterMode === 'preset' && selectedPeriod === period ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      {period}
-                    </button>
-                  ),
+            <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-2 sm:items-center">
+              {/* ✅ scrollable pills on mobile */}
+              <div className="flex gap-2 bg-slate-100 p-1 rounded-full overflow-x-auto scrollbar-hide w-full sm:w-auto">
+                {(['Today', 'Week', 'Month', 'All'] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => {
+                      setFilterMode('preset')
+                      setSelectedPeriod(period)
+                    }}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+                      filterMode === 'preset' && selectedPeriod === period
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
+              </div>
+
+              <div className="hidden sm:block w-px h-8 bg-slate-200 mx-2" />
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:items-center">
+                <button
+                  onClick={() => setFilterMode('custom')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                    filterMode === 'custom'
+                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Custom Range
+                </button>
+
+                {filterMode === 'custom' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2"
+                  >
+                    <input
+                      type="date"
+                      value={customRange.start}
+                      onChange={(e) =>
+                        setCustomRange((prev) => ({ ...prev, start: e.target.value }))
+                      }
+                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 w-full sm:w-auto"
+                    />
+                    <span className="text-slate-400 text-sm hidden sm:inline">to</span>
+                    <input
+                      type="date"
+                      value={customRange.end}
+                      onChange={(e) =>
+                        setCustomRange((prev) => ({ ...prev, end: e.target.value }))
+                      }
+                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 w-full sm:w-auto"
+                    />
+                  </motion.div>
                 )}
               </div>
-              <div className="w-px h-8 bg-slate-200 mx-2" />
-              <button
-                onClick={() => setFilterMode('custom')}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${filterMode === 'custom' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-              >
-                Custom Range
-              </button>
-              {filterMode === 'custom' && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-2 ml-2"
-                >
-                  <input
-                    type="date"
-                    value={customRange.start}
-                    onChange={(e) =>
-                      setCustomRange((prev) => ({ ...prev, start: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
-                  />
-                  <span className="text-slate-400 text-sm">to</span>
-                  <input
-                    type="date"
-                    value={customRange.end}
-                    onChange={(e) =>
-                      setCustomRange((prev) => ({ ...prev, end: e.target.value }))
-                    }
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
-                  />
-                </motion.div>
-              )}
             </div>
           </motion.div>
 
           {/* Summary Stats */}
           <motion.div
             variants={itemVariants}
-            className="grid grid-cols-1 md:grid-cols-4 gap-4"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
             <div className="bg-white p-5 rounded-2xl shadow-card">
               <p className="text-slate-500 text-sm font-medium mb-1">Total Spent</p>
@@ -267,7 +282,7 @@ export function TransactionsPage() {
           {/* Filter Bar */}
           <motion.div
             variants={itemVariants}
-            className="bg-white p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-center justify-between sticky top-0 z-10"
+            className="bg-white p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between sticky top-0 z-10"
           >
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="relative flex-1 md:w-72">
@@ -281,12 +296,17 @@ export function TransactionsPage() {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-hide">
+
+            <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 scrollbar-hide">
               {categoryFilterOptions.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedCategory === cat ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    selectedCategory === cat
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
                 >
                   {cat}
                 </button>
@@ -313,36 +333,48 @@ export function TransactionsPage() {
                       onClick={() =>
                         setExpandedId(expandedId === tx.id ? null : tx.id)
                       }
-                      className="p-4 flex items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                      className="p-4 flex items-start sm:items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
                     >
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${getCategoryBg(tx.category)}`}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${getCategoryBg(
+                          tx.category,
+                        )}`}
                       >
                         {tx.emoji}
                       </div>
-                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                        <div>
-                          <h4 className="font-bold font-heading text-slate-900 truncate">
-                            {tx.title}
-                          </h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                              {tx.category}
-                            </span>
+
+                      {/* ✅ mobile-friendly layout */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <h4 className="font-bold font-heading text-slate-900 truncate">
+                              {tx.title}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                {tx.category}
+                              </span>
+                              <span className="inline-flex items-center gap-1 text-xs text-slate-500 md:hidden">
+                                <Calendar className="w-3 h-3" /> {tx.date}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right flex-shrink-0">
+                            <div className="font-bold font-heading text-base sm:text-lg text-slate-900">
+                              -${tx.amount.toFixed(2)}
+                            </div>
                           </div>
                         </div>
-                        <div className="hidden md:flex flex-col text-sm text-slate-500">
+
+                        <div className="hidden md:flex flex-col text-sm text-slate-500 mt-2">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" /> {tx.date}
                           </span>
                         </div>
-                        <div className="text-right">
-                          <div className="font-bold font-heading text-lg text-slate-900">
-                            -${tx.amount.toFixed(2)}
-                          </div>
-                        </div>
                       </div>
-                      <div className="text-slate-400">
+
+                      <div className="text-slate-400 pt-1 sm:pt-0">
                         {expandedId === tx.id ? (
                           <ChevronUp className="w-5 h-5" />
                         ) : (
@@ -360,17 +392,18 @@ export function TransactionsPage() {
                           transition={{ duration: 0.2 }}
                           className="border-t border-slate-100 bg-slate-50/50"
                         >
-                          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                             <div className="space-y-4">
                               <div>
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                                   Note
                                 </label>
-                                <p className="text-slate-700 mt-1">
+                                <p className="text-slate-700 mt-1 break-words">
                                   {tx.note || '—'}
                                 </p>
                               </div>
-                              <div className="flex gap-6">
+
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                                     Transaction ID
@@ -389,14 +422,15 @@ export function TransactionsPage() {
                                 </div>
                               </div>
                             </div>
-                            <div className="flex flex-col justify-between items-end">
-                              <div className="flex gap-3">
+
+                            <div className="flex flex-col justify-end items-stretch md:items-end">
+                              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setEditModal(tx)
                                   }}
-                                  className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm font-medium"
+                                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm font-medium"
                                 >
                                   <Edit2 className="w-4 h-4" /> Edit
                                 </button>
@@ -405,7 +439,7 @@ export function TransactionsPage() {
                                     e.stopPropagation()
                                     setDeleteConfirm(tx.id)
                                   }}
-                                  className="flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
                                 >
                                   <Trash2 className="w-4 h-4" /> Delete
                                 </button>
