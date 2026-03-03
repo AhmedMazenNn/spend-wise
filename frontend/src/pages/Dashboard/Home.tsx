@@ -167,7 +167,7 @@ function Home() {
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-6 sm:space-y-8"
+          className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pt-16 lg:pt-0"
         >
           {/* Header */}
           <motion.header
@@ -175,7 +175,7 @@ function Home() {
             className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end"
           >
             <div className="min-w-0">
-              <h1 className="text-2xl mt-15 lg:mt-0 sm:text-3xl font-bold font-heading text-slate-900 break-words">
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 break-words">
                 {getGreeting()}, {user?.name?.split(' ')[0] || 'User'} 👋
               </h1>
               <p className="text-slate-500 mt-1 text-sm sm:text-base">
@@ -435,7 +435,7 @@ function Home() {
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
                 Spending Over Time
               </h3>
-              <div className="h-[260px] sm:h-[300px] w-full">
+              <div className="h-[260px] sm:h-[300px] w-full min-w-0" style={{ minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={dailySpending}>
                     <defs>
@@ -488,7 +488,7 @@ function Home() {
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">
                 Category Breakdown
               </h3>
-              <div className="h-[240px] sm:h-[250px] w-full relative">
+              <div className="h-[240px] sm:h-[250px] w-full relative min-w-0" style={{ minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie

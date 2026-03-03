@@ -1,7 +1,10 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
+const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
+
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 function signAccessToken(user) {
   return jwt.sign(
@@ -184,4 +187,61 @@ async function resetPassword(token, newPassword) {
   );
 }
 
-module.exports = { signup, login, refresh, forgotPassword, resetPassword, changePassword };
+/** Google OAuth: verify ID token, find or create user, return tokens. */
+async function googleAuth(idToken) {
+  if (!idToken) {
+    const err = new Error("Google ID token is required");
+    err.statusCode = 400;
+    throw err;
+  }
+
+  let payload;
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    payload = ticket.getPayload();
+  } catch {
+    const err = new Error("Invalid Google token");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const { sub: googleId, email, name, picture } = payload;
+
+  // Try to find existing user by googleId first, then by email (link accounts)
+  let user = await User.findOne({ googleId });
+
+  if (!user) {
+    user = await User.findOne({ email: email.toLowerCase() });
+    if (user) {
+      // Link Google to existing email account
+      user.googleId = googleId;
+      if (picture && !user.picture) user.picture = picture;
+      await user.save();
+    }
+  }
+
+  if (!user) {
+    // Create a new user
+    user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      googleId,
+      picture: picture || null,
+      passwordHash: null,
+    });
+  }
+
+  const accessToken = signAccessToken(user);
+  const refreshToken = signRefreshToken(user);
+
+  return {
+    user: { id: user._id, name: user.name, email: user.email, phone: user.phone, role: user.role, picture: user.picture },
+    accessToken,
+    refreshToken,
+  };
+}
+
+module.exports = { signup, login, refresh, forgotPassword, resetPassword, changePassword, googleAuth };

@@ -413,14 +413,14 @@ export function Report() {
       <Sidebar />
 
       {/* ✅ responsive left spacing so layout doesn't break */}
-      <main className="flex-1 ml-0 md:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+        <div className="max-w-7xl mx-auto space-y-8 pt-16 lg:pt-0">
           {/* Header stays visible always */}
           <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex items-center ">
-                  <h1 className="text-2xl mt-15 lg:ml-0 sm:text-3xl font-bold font-heading">Expense Report</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold font-heading">Expense Report</h1>
                 </div>
                 <p className="text-slate-600 mt-1 font-medium">Detailed analysis of your spending habits</p>
               </div>

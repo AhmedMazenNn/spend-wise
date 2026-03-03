@@ -146,19 +146,19 @@ export function TransactionsPage() {
       <Sidebar />
 
       {/* ✅ responsive spacing with sidebar */}
-      <main className="flex-1 ml-0 md:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-6"
+          className="max-w-7xl mx-auto space-y-6 pt-16 lg:pt-0"
         >
           <motion.header
             variants={itemVariants}
             className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6 sm:mb-8"
           >
             <div className="min-w-0">
-              <h1 className="text-2xl mt-15 lg:ml-0 sm:text-3xl font-bold font-heading text-slate-900">
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
                 Transactions
               </h1>
               <p className="text-slate-500 mt-1 text-sm sm:text-base">

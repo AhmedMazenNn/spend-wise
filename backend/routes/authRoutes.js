@@ -8,6 +8,7 @@ const {
   forgotPassword,
   resetPassword,
   changePassword,
+  googleAuth,
 } = require("../controllers/authController");
 const {
   signupValidator,
@@ -239,5 +240,31 @@ router.post("/reset-password", resetPasswordValidator, validate, resetPassword);
  *         description: Validation error
  */
 router.post("/change-password", auth, changePasswordValidator, validate, changePassword);
+
+/**
+ * @swagger
+ * /api/auth/google:
+ *   post:
+ *     summary: Sign in or register with Google
+ *     tags: [Auth]
+ *     description: Verify a Google ID token and return JWT tokens. Creates a new account if the user does not exist.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [idToken]
+ *             properties:
+ *               idToken:
+ *                 type: string
+ *                 description: Google ID token from GSI
+ *     responses:
+ *       200:
+ *         description: Authenticated successfully
+ *       401:
+ *         description: Invalid Google token
+ */
+router.post("/google", googleAuth);
 
 module.exports = router;

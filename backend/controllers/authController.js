@@ -113,4 +113,22 @@ async function changePassword(req, res, next) {
   }
 }
 
-module.exports = { signup, login, refresh, logout, profile, forgotPassword, resetPassword, changePassword };
+async function googleAuth(req, res, next) {
+  try {
+    const { idToken } = req.body;
+    const result = await authService.googleAuth(idToken);
+
+    setRefreshCookie(res, result.refreshToken);
+
+    return res.status(200).json({
+      user: result.user,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+  } catch (err) {
+    console.error('Google auth error:', err)
+    return res.status(400).json({ message: err.message || 'Google auth failed' })
+  }
+}
+
+module.exports = { signup, login, refresh, logout, profile, forgotPassword, resetPassword, changePassword, googleAuth };
