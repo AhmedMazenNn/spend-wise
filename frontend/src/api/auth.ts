@@ -162,6 +162,20 @@ export async function login(input: { email: string; password: string }) {
   return data
 }
 
+export async function googleAuth(credential: string) {
+  const data = await request<AuthResponse>(
+    '/api/auth/google',
+    {
+      method: 'POST',
+      body: JSON.stringify({ credential, idToken: credential }),
+    },
+    null,
+  )
+  
+  saveAuth(data)
+  return data
+}
+
 export async function logout() {
   const token = getToken()
 
