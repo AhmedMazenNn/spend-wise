@@ -48,31 +48,6 @@ function getCategoryBg(category: string): string {
   return map[category] ?? 'bg-slate-100'
 }
 
-const DUMMY_EXPENSES: Expense[] = [
-  { id: 'd1', amount: 45.5, title: 'Lunch at Cafe', category: 'Food', date: '', emoji: '🍔', note: 'Team lunch' },
-  { id: 'd2', amount: 28, title: 'Uber to office', category: 'Transport', date: '', emoji: '🚗', note: '' },
-  { id: 'd3', amount: 120, title: 'Grocery shopping', category: 'Shopping', date: '', emoji: '🛒', note: 'Weekly groceries' },
-  { id: 'd4', amount: 89, title: 'Electric bill', category: 'Bills', date: '', emoji: '💡', note: '' },
-  { id: 'd5', amount: 55, title: 'Gym membership', category: 'Health', date: '', emoji: '💪', note: 'Monthly' },
-  { id: 'd6', amount: 35, title: 'Movie tickets', category: 'Fun', date: '', emoji: '🎬', note: '' },
-  { id: 'd7', amount: 15.99, title: 'Coffee & pastry', category: 'Food', date: '', emoji: '☕', note: '' },
-  { id: 'd8', amount: 42, title: 'Gas station', category: 'Transport', date: '', emoji: '⛽', note: '' },
-]
-
-function getDummyExpensesForPeriod(start: string, end: string): Expense[] {
-  const startDate = new Date(start)
-  const endDate = new Date(end)
-  const days: string[] = []
-  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-    days.push(d.toISOString().split('T')[0])
-  }
-  return DUMMY_EXPENSES.map((e, i) => ({
-    ...e,
-    id: `dummy-${i}-${e.id}`,
-    date: days[Math.min(i, days.length - 1)] || days[0],
-  }))
-}
-
 type ReportFilterMode = 'month' | 'date' | 'range'
 
 function getStartEndDates(
@@ -161,7 +136,7 @@ export function Report() {
         endDate: end,
         limit: 5000,
       })
-      setExpenses(res.expenses)
+      setExpenses(res.expenses ?? [])
     } catch {
       setExpenses([])
     } finally {
@@ -173,19 +148,16 @@ export function Report() {
     loadExpenses()
   }, [loadExpenses])
 
-  const displayExpenses = useMemo(() => {
-    if (expenses.length > 0) return expenses
-    if (!start || !end) return []
-    return getDummyExpensesForPeriod(start, end)
-  }, [expenses, start, end])
-
-  const isDemoData = expenses.length === 0 && !loading
+  // ✅ no demo fallback — only real data
+  const displayExpenses = expenses
 
   const filteredTransactions = useMemo(() => {
     let list = displayExpenses
+
     if (selectedCategory !== 'All') {
       list = list.filter((tx) => tx.category === selectedCategory)
     }
+
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase()
       list = list.filter(
@@ -195,6 +167,7 @@ export function Report() {
           tx.category.toLowerCase().includes(q),
       )
     }
+
     return list
   }, [displayExpenses, selectedCategory, searchTerm])
 
@@ -426,7 +399,6 @@ export function Report() {
     }
   }
 
-  // ✅ These variants are now used ONLY for the "loaded content" container
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -441,24 +413,19 @@ export function Report() {
       <Sidebar />
 
       {/* ✅ responsive left spacing so layout doesn't break */}
-      <main className="flex-1 ml-0 md:ml-64 p-8 overflow-y-auto h-screen">
+      <main className="flex-1 ml-0 md:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header stays visible always */}
           <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">
             <div className="flex justify-between items-center">
               <div>
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold font-heading text-slate-900 drop-shadow-sm">Expense Report</h1>
-                  {isDemoData && (
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-                      Demo data
-                    </span>
-                  )}
+                <div className="flex items-center ">
+                  <h1 className="text-2xl mt-15 lg:ml-0 sm:text-3xl font-bold font-heading">Expense Report</h1>
                 </div>
                 <p className="text-slate-600 mt-1 font-medium">Detailed analysis of your spending habits</p>
               </div>
 
-              <div className="relative">
+              <div className="relative mt-10 lg:mt-0">
                 <button
                   onClick={() => setExportDropdown((v) => !v)}
                   disabled={exporting !== null}

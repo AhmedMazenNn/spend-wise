@@ -34,7 +34,6 @@ import {
 } from '../../api/auth'
 
 type UserRow = User & {
-  // derived UI fields
   initials: string
   status: 'Active' | 'Inactive'
   statusClass: string
@@ -42,6 +41,7 @@ type UserRow = User & {
   planClass: string
   signedUpLabel: string
 }
+
 const user = getStoredUser()
 
 function initialsFromName(name?: string) {
@@ -64,7 +64,6 @@ function formatSignedUp(dateStr?: string) {
 }
 
 function isLikelyActive(createdAt?: string) {
-  // If you don't have lastLogin/active flags, we'll treat users created in last 30 days as "Active"
   if (!createdAt) return true
   const d = new Date(createdAt)
   if (Number.isNaN(d.getTime())) return true
@@ -75,10 +74,7 @@ function isLikelyActive(createdAt?: string) {
 export function Admin() {
   const containerVariants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
   }
 
   const itemVariants = {
@@ -86,15 +82,12 @@ export function Admin() {
     visible: { y: 0, opacity: 1 },
   }
 
-  // ✅ Real data from API
   const [users, setUsers] = useState<User[]>([])
   const [loadingUsers, setLoadingUsers] = useState(true)
   const [usersError, setUsersError] = useState<string | null>(null)
 
-  // Search
   const [query, setQuery] = useState('')
 
-  // Edit user modal
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [editForm, setEditForm] = useState({
     name: '',
@@ -106,7 +99,6 @@ export function Admin() {
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
 
-  // Delete confirmation (UI modal)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -178,9 +170,7 @@ export function Admin() {
       closeEditModal()
       await loadUsers()
     } catch (err) {
-      setEditError(
-        err instanceof Error ? err.message : 'Failed to update user.',
-      )
+      setEditError(err instanceof Error ? err.message : 'Failed to update user.')
     } finally {
       setEditSubmitting(false)
     }
@@ -191,22 +181,22 @@ export function Admin() {
     setDeleteError(null)
     setDeleteOpen(true)
   }
-  
+
   function closeDeleteModal() {
-    if (deletingId) return // prevent closing while deleting
+    if (deletingId) return
     setDeleteOpen(false)
     setDeleteTarget(null)
     setDeleteError(null)
   }
-  
+
   async function confirmDelete() {
     if (!deleteTarget) return
     const userId = deleteTarget.id ?? (deleteTarget as User & { _id?: string })._id
     if (!userId) return
-  
+
     setDeletingId(userId)
     setDeleteError(null)
-  
+
     try {
       await deleteUserByAdmin(userId)
       await loadUsers()
@@ -219,7 +209,6 @@ export function Admin() {
     }
   }
 
-  // Derived + UI friendly rows
   const userRows: UserRow[] = useMemo(() => {
     return users.map((u) => {
       const active = isLikelyActive(u.createdAt)
@@ -235,7 +224,6 @@ export function Admin() {
           ? 'bg-amber-100 text-amber-800'
           : 'bg-slate-100 text-slate-600'
 
-      // Simple deterministic color based on email/name
       const seed = (u.email || u.name || 'user').length % 8
       const avatarColorClasses = [
         'bg-purple-100 text-purple-700',
@@ -255,10 +243,8 @@ export function Admin() {
         status,
         statusClass,
         plan,
-        planClass: planClass,
+        planClass,
         signedUpLabel: formatSignedUp(u.createdAt),
-        // reuse a single class field for avatar like your demo data
-        // (kept as statusClass/planClass separately)
         color: avatarClass,
       } as UserRow
     })
@@ -277,7 +263,6 @@ export function Admin() {
     })
   }, [userRows, query])
 
-  // Stats from real data
   const totalUsers = users.length
   const activeUsers = userRows.filter((u) => u.status === 'Active').length
   const newThisWeek = userRows.filter((u) => {
@@ -289,7 +274,6 @@ export function Admin() {
   }).length
   const adminUsers = userRows.filter((u) => u.plan === 'Admin').length
 
-  // Daily Sign-ups from real user data (group by createdAt date)
   const signupData = useMemo(() => {
     const days = 14
     const endDate = new Date()
@@ -335,31 +319,34 @@ export function Admin() {
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
+      {/* ✅ Responsive main: no ml on mobile, add top padding for mobile top bar, responsive padding */}
+      <main className="flex-1 lg:ml-64 pt-20 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-8"
+          className="max-w-7xl mx-auto space-y-6 sm:space-y-8"
         >
           {/* Header */}
           <motion.header
             variants={itemVariants}
-            className="flex justify-between items-end"
+            className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-end"
           >
-            <div>
-              <h1 className="text-3xl font-bold font-heading text-slate-900">
+            <div className="min-w-0">
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
                 Admin Dashboard
               </h1>
-              <h2>Welcome, {user?.name}</h2>
-              <p className="text-slate-500 mt-1">
+              <h2 className="text-sm sm:text-base text-slate-700 truncate">
+                Welcome, {user?.name}
+              </h2>
+              <p className="text-slate-500 mt-1 text-sm sm:text-base">
                 User activity and platform analytics
               </p>
             </div>
           </motion.header>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {[
               {
                 label: 'Total Users',
@@ -389,15 +376,15 @@ export function Admin() {
               <motion.div
                 key={stat.label}
                 variants={itemVariants}
-                className="bg-white p-6 rounded-2xl shadow-card flex items-center gap-4"
+                className="bg-white p-5 sm:p-6 rounded-2xl shadow-card flex items-center gap-4"
               >
                 <div
                   className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}
                 >
                   <stat.icon className="w-6 h-6" />
                 </div>
-                <div>
-                  <p className="text-slate-500 text-sm font-medium">
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-sm font-medium truncate">
                     {stat.label}
                   </p>
                   <h3 className="text-2xl font-bold font-heading text-slate-900">
@@ -409,16 +396,15 @@ export function Admin() {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Sign-ups Chart (demo) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <motion.div
               variants={itemVariants}
-              className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card"
+              className="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 shadow-card"
             >
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
-                Daily Sign-ups (demo)
+                Daily Sign-ups
               </h3>
-              <div className="h-[300px] w-full">
+              <div className="h-[260px] sm:h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={signupData}>
                     <CartesianGrid
@@ -451,30 +437,29 @@ export function Admin() {
                       dataKey="signups"
                       fill="#10B981"
                       radius={[4, 4, 0, 0]}
-                      barSize={32}
+                      barSize={28}
                     />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </motion.div>
 
-            {/* User Activity Breakdown (real) */}
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl p-6 shadow-card"
+              className="bg-white rounded-2xl p-5 sm:p-6 shadow-card"
             >
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">
                 User Status
               </h3>
-              <div className="h-[250px] w-full relative">
+              <div className="h-[240px] sm:h-[250px] w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={userStatusData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={50}
+                      outerRadius={75}
                       paddingAngle={5}
                       dataKey="value"
                       stroke="none"
@@ -503,7 +488,7 @@ export function Admin() {
                 </div>
               </div>
 
-              <div className="mt-4 flex justify-center gap-4">
+              <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2">
                 {userStatusData.map((item) => (
                   <div key={item.name} className="flex items-center gap-2 text-sm">
                     <span
@@ -517,35 +502,35 @@ export function Admin() {
             </motion.div>
           </div>
 
-          {/* Recent Users Table */}
+          {/* Users Table */}
           <motion.div
             variants={itemVariants}
             className="bg-white rounded-2xl shadow-card overflow-hidden"
           >
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+            <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
               <h3 className="text-lg font-bold font-heading text-slate-900">
                 Users
               </h3>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 {loadingUsers && (
                   <span className="text-sm text-slate-500">Loading…</span>
                 )}
-                <div className="relative">
+                <div className="relative w-full sm:w-64">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search users..."
-                    className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 w-64"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
             </div>
 
             {usersError && (
-              <div className="p-6">
+              <div className="p-5 sm:p-6">
                 <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                   {usersError}
                 </p>
@@ -553,7 +538,7 @@ export function Admin() {
             )}
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
                   <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider font-medium border-b border-slate-100">
                     <th className="px-6 py-4">User</th>
@@ -568,20 +553,14 @@ export function Admin() {
                 <tbody className="divide-y divide-slate-100">
                   {!loadingUsers && filteredRows.length === 0 ? (
                     <tr>
-                      <td
-                        className="px-6 py-8 text-sm text-slate-500"
-                        colSpan={6}
-                      >
+                      <td className="px-6 py-8 text-sm text-slate-500" colSpan={6}>
                         No users found.
                       </td>
                     </tr>
                   ) : (
                     filteredRows.map((user, index) => {
-                      // avatar classes from our derived row
-                      const avatarClass =
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (user as any).color ||
-                        'bg-slate-100 text-slate-700'
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      const avatarClass = (user as any).color || 'bg-slate-100 text-slate-700'
 
                       return (
                         <tr
@@ -746,7 +725,7 @@ export function Admin() {
                     </select>
                   </div>
 
-                  <div className="flex gap-3 pt-2">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
                     <button
                       type="button"
                       onClick={closeEditModal}
@@ -766,74 +745,75 @@ export function Admin() {
               </motion.div>
             </div>
           )}
+
+          {/* Delete User Modal */}
+          {deleteOpen && deleteTarget && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+              <motion.div
+                initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.98 }}
+                transition={{ duration: 0.18 }}
+                className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Confirm delete user"
+              >
+                <div className="flex items-center justify-between p-6 border-b border-slate-100">
+                  <h3 className="text-lg font-bold font-heading text-slate-900">
+                    Delete user
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={closeDeleteModal}
+                    disabled={!!deletingId}
+                    className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+                    aria-label="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  <p className="text-sm text-slate-600">
+                    Are you sure you want to delete{' '}
+                    <span className="font-semibold text-slate-900">
+                      {deleteTarget.name || deleteTarget.email || 'this user'}
+                    </span>
+                    ? This action cannot be undone.
+                  </p>
+
+                  {deleteError && (
+                    <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                      {deleteError}
+                    </p>
+                  )}
+
+                  <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-end">
+                    <button
+                      type="button"
+                      onClick={closeDeleteModal}
+                      disabled={!!deletingId}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={confirmDelete}
+                      disabled={!!deletingId}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      {deletingId ? 'Deleting…' : 'Delete'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </motion.div>
-        {/* Delete User Modal */}
-{deleteOpen && deleteTarget && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-    <motion.div
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 12, scale: 0.98 }}
-      transition={{ duration: 0.18 }}
-      className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Confirm delete user"
-    >
-      <div className="flex items-center justify-between p-6 border-b border-slate-100">
-        <h3 className="text-lg font-bold font-heading text-slate-900">
-          Delete user
-        </h3>
-        <button
-          type="button"
-          onClick={closeDeleteModal}
-          disabled={!!deletingId}
-          className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
-          aria-label="Close"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-
-      <div className="p-6">
-        <p className="text-sm text-slate-600">
-          Are you sure you want to delete{' '}
-          <span className="font-semibold text-slate-900">
-            {deleteTarget.name || deleteTarget.email || 'this user' }
-          </span> 
-          ? This action cannot be undone.
-        </p>
-
-        {deleteError && (
-          <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-            {deleteError}
-          </p>
-        )}
-
-        <div className="mt-6 flex gap-3 justify-end">
-          <button
-            type="button"
-            onClick={closeDeleteModal}
-            disabled={!!deletingId}
-            className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            onClick={confirmDelete}
-            disabled={!!deletingId}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
-          >
-            <Trash2 className="w-4 h-4" />
-            {deletingId ? 'Deleting…' : 'Delete'}
-          </button>
-        </div>
-      </div>
-    </motion.div>
-  </div>
-  )}
       </main>
     </div>
   )

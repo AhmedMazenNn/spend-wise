@@ -140,7 +140,7 @@ function Home() {
     return (
       <div className="flex min-h-screen bg-main">
         <Sidebar />
-        <main className="flex-1 ml-64 p-8 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
           <div className="text-slate-500">Loading...</div>
         </main>
       </div>
@@ -151,7 +151,7 @@ function Home() {
     return (
       <div className="flex min-h-screen bg-main">
         <Sidebar />
-        <main className="flex-1 ml-64 p-8 flex items-center justify-center">
+        <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
           <div className="text-red-500">{error}</div>
         </main>
       </div>
@@ -162,23 +162,23 @@ function Home() {
     <div className="flex min-h-screen bg-main">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
+      <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-8"
+          className="max-w-7xl mx-auto space-y-6 sm:space-y-8"
         >
           {/* Header */}
           <motion.header
             variants={itemVariants}
-            className="flex justify-between items-end"
+            className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end"
           >
-            <div>
-              <h1 className="text-3xl font-bold font-heading text-slate-900">
+            <div className="min-w-0">
+              <h1 className="text-2xl mt-15 lg:mt-0 sm:text-3xl font-bold font-heading text-slate-900 break-words">
                 {getGreeting()}, {user?.name?.split(' ')[0] || 'User'} 👋
               </h1>
-              <p className="text-slate-500 mt-1">
+              <p className="text-slate-500 mt-1 text-sm sm:text-base">
                 {new Date().toLocaleDateString('en-US', {
                   weekday: 'long',
                   year: 'numeric',
@@ -187,6 +187,7 @@ function Home() {
                 })}
               </p>
             </div>
+
             <button
               onClick={() => {
                 if (budget) {
@@ -198,7 +199,7 @@ function Home() {
                 }
                 setIsBudgetModalOpen(true)
               }}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
             >
               <Wallet className="w-4 h-4 text-emerald-600" />
               {budget ? 'Edit Budget' : 'Set Budget'}
@@ -207,49 +208,59 @@ function Home() {
 
           {/* Date Filter */}
           <motion.div variants={itemVariants} className="space-y-4">
-            <div className="flex flex-wrap gap-2 items-center">
-              <div className="flex gap-2 bg-slate-100 p-1 rounded-full">
-                {(['Today', 'Week', 'Month', 'All'] as TimePeriod[]).map(
-                  (period) => (
-                    <button
-                      key={period}
-                      onClick={() => {
-                        setFilterMode('preset')
-                        setSelectedPeriod(period)
-                      }}
-                      className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${filterMode === 'preset' && selectedPeriod === period ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-                    >
-                      {period}
-                    </button>
-                  ),
-                )}
+            <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:gap-2 lg:items-center">
+              <div className="w-full lg:w-auto flex gap-2 bg-slate-100 p-1 rounded-full overflow-x-auto no-scrollbar">
+                {(['Today', 'Week', 'Month', 'All'] as TimePeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => {
+                      setFilterMode('preset')
+                      setSelectedPeriod(period)
+                    }}
+                    className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      filterMode === 'preset' && selectedPeriod === period
+                        ? 'bg-emerald-600 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    {period}
+                  </button>
+                ))}
               </div>
+
               {selectedPeriod === 'Month' && (
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-2"
+                  className="w-full sm:w-auto flex items-center gap-2"
                 >
                   <input
                     type="month"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
                   />
                 </motion.div>
               )}
-              <div className="w-px h-8 bg-slate-200 mx-2" />
+
+              <div className="hidden lg:block w-px h-8 bg-slate-200 mx-2" />
+
               <button
                 onClick={() => setFilterMode('custom')}
-                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${filterMode === 'custom' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'}`}
+                className={`w-full sm:w-auto px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                  filterMode === 'custom'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
               >
                 Custom Range
               </button>
+
               {filterMode === 'custom' && (
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center gap-2 ml-2"
+                  className="w-full flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-0"
                 >
                   <input
                     type="date"
@@ -257,16 +268,16 @@ function Home() {
                     onChange={(e) =>
                       setCustomRange((prev) => ({ ...prev, start: e.target.value }))
                     }
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
                   />
-                  <span className="text-slate-400 text-sm">to</span>
+                  <span className="text-slate-400 text-sm hidden sm:inline">to</span>
                   <input
                     type="date"
                     value={customRange.end}
                     onChange={(e) =>
                       setCustomRange((prev) => ({ ...prev, end: e.target.value }))
                     }
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
                   />
                 </motion.div>
               )}
@@ -282,14 +293,12 @@ function Home() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
                   <div className="relative z-10">
-                    <div className="flex justify-between items-start mb-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-bold font-heading">
-                          Active Budget
-                        </h3>
+                        <h3 className="text-lg font-bold font-heading">Active Budget</h3>
                         <p className="text-slate-400 text-sm mt-1">
                           {new Date(budget.startDate).toLocaleDateString()} –{' '}
                           {new Date(budget.endDate).toLocaleDateString()}
@@ -297,7 +306,11 @@ function Home() {
                       </div>
                       <div className="flex items-center gap-2">
                         <div
-                          className={`px-3 py-1 rounded-full text-xs font-bold border ${budgetStats.isOver ? 'bg-red-500/20 border-red-500/50 text-red-200' : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200'}`}
+                          className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                            budgetStats.isOver
+                              ? 'bg-red-500/20 border-red-500/50 text-red-200'
+                              : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200'
+                          }`}
                         >
                           {budgetStats.isOver ? 'Over Budget' : 'On Track'}
                         </div>
@@ -312,8 +325,9 @@ function Home() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-end gap-2 mb-2">
-                      <span className="text-3xl font-bold font-heading">
+
+                    <div className="flex flex-wrap items-end gap-2 mb-2">
+                      <span className="text-2xl sm:text-3xl font-bold font-heading">
                         $
                         {budgetStats.spentInBudget.toLocaleString(undefined, {
                           minimumFractionDigits: 2,
@@ -323,15 +337,19 @@ function Home() {
                         / ${budget.amount.toLocaleString()}
                       </span>
                     </div>
+
                     <div className="h-3 w-full bg-slate-700 rounded-full overflow-hidden mb-2">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${budgetStats.percentage}%` }}
                         transition={{ duration: 1, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${budgetStats.isOver ? 'bg-red-500' : 'bg-emerald-500'}`}
+                        className={`h-full rounded-full ${
+                          budgetStats.isOver ? 'bg-red-500' : 'bg-emerald-500'
+                        }`}
                       />
                     </div>
-                    <div className="flex justify-between text-xs text-slate-400">
+
+                    <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-slate-400">
                       <span>{budgetStats.percentage.toFixed(1)}% used</span>
                       <span>
                         {budgetStats.isOver
@@ -346,15 +364,15 @@ function Home() {
           </AnimatePresence>
 
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <motion.div variants={itemVariants} className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-2xl opacity-75 group-hover:opacity-100 transition duration-200 blur-[1px]" />
-              <div className="relative h-full bg-white rounded-2xl p-8 flex flex-col justify-between shadow-sm">
+              <div className="relative h-full bg-white rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
                 <div>
                   <p className="text-slate-500 font-medium text-sm uppercase tracking-wider">
                     Spent: {getPeriodLabel()}
                   </p>
-                  <h2 className="text-5xl font-bold font-heading text-slate-900 mt-4">
+                  <h2 className="text-4xl sm:text-5xl font-bold font-heading text-slate-900 mt-4 break-words">
                     $
                     {stats.totalSpent.toLocaleString('en-US', {
                       minimumFractionDigits: 2,
@@ -372,13 +390,13 @@ function Home() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl p-8 shadow-card flex flex-col justify-between"
+              className="bg-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col justify-between"
             >
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
                 Quick Stats
               </h3>
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-4">
                   <span className="text-slate-500 font-medium">Daily Average</span>
                   <span className="text-xl font-bold text-slate-900">
                     $
@@ -388,10 +406,8 @@ function Home() {
                   </span>
                 </div>
                 <div className="h-px bg-slate-100" />
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">
-                    Highest Expense
-                  </span>
+                <div className="flex justify-between items-center gap-4">
+                  <span className="text-slate-500 font-medium">Highest Expense</span>
                   <span className="text-xl font-bold text-slate-900">
                     $
                     {stats.highest.toLocaleString(undefined, {
@@ -400,9 +416,9 @@ function Home() {
                   </span>
                 </div>
                 <div className="h-px bg-slate-100" />
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center gap-4">
                   <span className="text-slate-500 font-medium">Top Category</span>
-                  <span className="text-xl font-bold text-emerald-600">
+                  <span className="text-xl font-bold text-emerald-600 truncate max-w-[10rem] sm:max-w-none">
                     {stats.topCategory || 'N/A'}
                   </span>
                 </div>
@@ -411,15 +427,15 @@ function Home() {
           </div>
 
           {/* Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <motion.div
               variants={itemVariants}
-              className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-card"
+              className="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 shadow-card"
             >
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
                 Spending Over Time
               </h3>
-              <div className="h-[300px] w-full">
+              <div className="h-[260px] sm:h-[300px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={dailySpending}>
                     <defs>
@@ -467,20 +483,20 @@ function Home() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl p-6 shadow-card"
+              className="bg-white rounded-2xl p-5 sm:p-6 shadow-card"
             >
               <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">
                 Category Breakdown
               </h3>
-              <div className="h-[250px] w-full relative">
+              <div className="h-[240px] sm:h-[250px] w-full relative">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={categoryData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      innerRadius={50}
+                      outerRadius={75}
                       paddingAngle={5}
                       dataKey="value"
                       stroke="none"
@@ -498,6 +514,7 @@ function Home() {
                     />
                   </PieChart>
                 </ResponsiveContainer>
+
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
                     <span className="block text-2xl font-bold font-heading text-slate-900">
@@ -510,15 +527,16 @@ function Home() {
                   </div>
                 </div>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {categoryData.slice(0, 6).map((item) => (
-                  <div key={item.name} className="flex items-center gap-2 text-sm">
+                  <div key={item.name} className="flex items-center gap-2 text-sm min-w-0">
                     <span
-                      className="w-2.5 h-2.5 rounded-full"
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: item.color }}
                     />
                     <span className="text-slate-600 truncate">{item.name}</span>
-                    <span className="text-slate-400 ml-auto">
+                    <span className="text-slate-400 ml-auto shrink-0">
                       {stats.totalSpent > 0
                         ? Math.round((item.value / stats.totalSpent) * 100)
                         : 0}
@@ -532,17 +550,18 @@ function Home() {
 
           {/* Recent Expenses */}
           <motion.div variants={itemVariants}>
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center justify-between gap-3 mb-4">
               <h3 className="text-lg font-bold font-heading text-slate-900">
                 Recent Expenses
               </h3>
               <Link
                 to="/transactions"
-                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline"
+                className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline shrink-0"
               >
                 View All
               </Link>
             </div>
+
             <div className="space-y-3">
               {transactions.slice(0, 5).map((tx, index) => (
                 <motion.div
@@ -550,26 +569,47 @@ function Home() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`flex items-center p-4 rounded-xl ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'} hover:bg-slate-50 transition-colors`}
+                  className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 p-4 rounded-xl ${
+                    index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
+                  } hover:bg-slate-50 transition-colors`}
                 >
-                  <div
-                    className={`w-12 h-12 rounded-full flex items-center justify-center text-xl mr-4 ${tx.category === 'Food' ? 'bg-orange-100' : tx.category === 'Transport' ? 'bg-blue-100' : tx.category === 'Shopping' ? 'bg-pink-100' : tx.category === 'Bills' ? 'bg-purple-100' : tx.category === 'Health' ? 'bg-emerald-100' : tx.category === 'Fun' ? 'bg-amber-100' : 'bg-slate-100'}`}
-                  >
-                    {tx.emoji}
+                  <div className="flex items-center min-w-0">
+                    <div
+                      className={`w-12 h-12 rounded-full flex items-center justify-center text-xl mr-4 shrink-0 ${
+                        tx.category === 'Food'
+                          ? 'bg-orange-100'
+                          : tx.category === 'Transport'
+                            ? 'bg-blue-100'
+                            : tx.category === 'Shopping'
+                              ? 'bg-pink-100'
+                              : tx.category === 'Bills'
+                                ? 'bg-purple-100'
+                                : tx.category === 'Health'
+                                  ? 'bg-emerald-100'
+                                  : tx.category === 'Fun'
+                                    ? 'bg-amber-100'
+                                    : 'bg-slate-100'
+                      }`}
+                    >
+                      {tx.emoji}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold font-heading text-slate-900 truncate">
+                        {tx.title}
+                      </h4>
+                      <p className="text-sm text-slate-400 truncate">
+                        {tx.date} • {tx.category}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold font-heading text-slate-900">
-                      {tx.title}
-                    </h4>
-                    <p className="text-sm text-slate-400">
-                      {tx.date} • {tx.category}
-                    </p>
-                  </div>
-                  <div className="font-bold font-heading text-slate-900">
+
+                  <div className="font-bold font-heading text-slate-900 sm:ml-4 sm:text-right">
                     -${tx.amount.toFixed(2)}
                   </div>
                 </motion.div>
               ))}
+
               {transactions.length === 0 && (
                 <div className="text-center py-8 text-slate-500">
                   No expenses found for this period.
@@ -585,9 +625,9 @@ function Home() {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-8 right-8 w-16 h-16 bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-600/30 flex items-center justify-center z-30 hover:bg-emerald-500 transition-colors"
+        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 w-14 h-14 sm:w-16 sm:h-16 bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-600/30 flex items-center justify-center z-30 hover:bg-emerald-500 transition-colors"
       >
-        <Plus className="w-8 h-8" />
+        <Plus className="w-7 h-7 sm:w-8 sm:h-8" />
       </motion.button>
 
       <AddExpenseModal
@@ -629,6 +669,7 @@ function Home() {
                       <X className="w-5 h-5 text-slate-400" />
                     </button>
                   </div>
+
                   <div className="space-y-4">
                     <div>
                       <label className="block text-sm font-medium text-slate-600 mb-1">
@@ -651,7 +692,8 @@ function Home() {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-slate-600 mb-1">
                           Start Date
@@ -685,6 +727,7 @@ function Home() {
                         />
                       </div>
                     </div>
+
                     <button
                       onClick={handleSaveBudget}
                       disabled={budgetSaving}
