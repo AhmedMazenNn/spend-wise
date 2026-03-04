@@ -1,8 +1,8 @@
 ---
-title: Spend Wise Frontend
-emoji: ⚡
-colorFrom: green
-colorTo: red
+title: Spend Wise Backend
+emoji: 😻
+colorFrom: yellow
+colorTo: pink
 sdk: docker
 pinned: false
 ---

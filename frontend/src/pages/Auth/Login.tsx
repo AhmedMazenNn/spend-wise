@@ -157,7 +157,7 @@ export function Login() {
           </div>
 
           <div className="grid grid-cols-1 gap-4">
-            <GoogleAuthButton label="Continue with Google" />
+            <GoogleAuthButton/>
           </div>
 
           <p className="text-center mt-8 text-sm text-slate-500">
