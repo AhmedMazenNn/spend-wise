@@ -13,6 +13,7 @@ import { RequireAuth } from './components/RequireAuth'
 import { Settings } from './pages/Dashboard/Settings'
 import { Admin } from './pages/Dashboard/Admin'
 import { RequireAdmin } from './components/RequireAdmin'
+import { NotFound } from './pages/NotFound'
 
 const App = () => {
   return (
@@ -31,6 +32,7 @@ const App = () => {
             <Route path="/admin" element={<Admin />} />
           </Route>
         </Route>
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
     </div>
