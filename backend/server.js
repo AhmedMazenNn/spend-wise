@@ -1,22 +1,67 @@
-require("dotenv").config();
+const cookieParser = require("cookie-parser");
+const path = require("path");
+require("dotenv").config({ path: path.join(__dirname, ".env") });
+
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
+
 const connectDb = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
+const dashboardRoutes = require("./routes/dashboardRoutes");
+const expenseRoutes = require("./routes/expenseRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
+const budgetRoutes = require("./routes/budgetRoutes");
+
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./config/swagger");
 
 const app = express();
 
-// Middleware
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+
+app.use(cookieParser());
+
 app.use(
-    cors({
-        origin: process.env.CLIENT_URL || "*",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        allowedHeaders: ["Content-Type", "Authorization"],
-    })
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    credentials: true, // IMPORTANT for cookies
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE" ],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
 );
 app.use(express.json());
 
-connectDb();
-
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/budgets", budgetRoutes);
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+app.use((err, req, res, next) => {
+  const status = err.statusCode || 500;
+  res.status(status).json({
+    message: err.message || "Server error",
+  });
+});
+
+
+/**
+ * @openapi
+ * /health:
+ *   get:
+ *     summary: Health check
+ *     responses:
+ *       200:
+ *         description: OK
+ */
+app.get("/health", (req, res) => res.json({ ok: true }));
+
+console.log("Swagger paths:", Object.keys(swaggerSpec.paths || {}));
+(async () => {
+  await connectDb();
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+})();
