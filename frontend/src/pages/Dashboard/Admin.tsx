@@ -282,9 +282,12 @@ export function Admin() {
     startDate.setDate(startDate.getDate() - days + 1)
     startDate.setHours(0, 0, 0, 0)
 
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const getLocalKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+
     const countByDate: Record<string, number> = {}
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      const key = d.toISOString().split('T')[0]
+      const key = getLocalKey(d)
       countByDate[key] = 0
     }
 
@@ -292,17 +295,22 @@ export function Admin() {
       if (!u.createdAt) return
       const d = new Date(u.createdAt)
       if (Number.isNaN(d.getTime())) return
-      const key = d.toISOString().split('T')[0]
+      const key = getLocalKey(d)
       if (key in countByDate) countByDate[key] += 1
     })
 
     return Object.entries(countByDate)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, signups]) => ({
-        date: new Date(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-        dateKey: date,
-        signups,
-      }))
+      .map(([dateKey, signups]) => {
+        // Parse dateKey (YYYY-MM-DD) carefully to avoid timezone conversion back
+        const [y, m, d] = dateKey.split('-').map(Number)
+        const localDate = new Date(y, m - 1, d)
+        return {
+          date: localDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          dateKey,
+          signups,
+        }
+      })
   }, [users])
 
   const userStatusData = useMemo(() => {
