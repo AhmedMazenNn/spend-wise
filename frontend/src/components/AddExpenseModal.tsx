@@ -21,6 +21,14 @@ const PRESET_COLORS = [
   '#64748B', // Slate
   '#EC4899', // Pink
   '#8B5CF6', // Violet
+  '#22C55E', // Green
+  '#0EA5E9', // Sky
+  '#E11D48', // Red
+  '#A855F7', // Purple
+  '#14B8A6', // Teal
+  '#F97316', // Orange
+  '#84CC16', // Lime
+  '#06B6D4', // Cyan
 ]
 
 export function AddExpenseModal({
@@ -29,7 +37,7 @@ export function AddExpenseModal({
   onSuccess,
 }: AddExpenseModalProps) {
   const [amount, setAmount] = useState('')
-  const [description, setDescription] = useState('')
+  const [title, setTitle] = useState('')
   const [note, setNote] = useState('')
   const [categoryId, setCategoryId] = useState<string>('')
   const [customCategory, setCustomCategory] = useState('')
@@ -146,7 +154,7 @@ export function AddExpenseModal({
     try {
       await createExpense({
         amount: amt,
-        title: description.trim() || 'Untitled',
+        title: title.trim() || 'Untitled',
         note: note.trim() || undefined,
         date,
         categoryId,
@@ -157,7 +165,7 @@ export function AddExpenseModal({
       onSuccess?.()
       onClose()
       setAmount('')
-      setDescription('')
+      setTitle('')
       setNote('')
       setCustomCategory('')
       setCustomIcon('📦')
@@ -242,12 +250,12 @@ export function AddExpenseModal({
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1">
                           <label className="text-sm font-medium text-slate-600">
-                            Description
+                            Title
                           </label>
                           <input
                             type="text"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none focus:ring-2 focus:ring-emerald-500 transition-all"
                             placeholder="What was it?"
                           />
