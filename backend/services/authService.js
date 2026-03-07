@@ -132,12 +132,14 @@ async function refresh(refreshToken) {
     throw err;
   }
 
-  if (user.tokenVersion !== payload.tv) {
-    console.error(`!!! REVOCATION ALERT !!!`);
+  const dbVersion = user.tokenVersion ?? 0;
+  const jwtVersion = payload.tv ?? 0;
+
+  if (dbVersion !== jwtVersion) {
+    console.error(`!!! VERSION MISMATCH !!!`);
     console.error(`User: ${userId}`);
-    console.error(`JWT Version (payload.tv): ${payload.tv}`);
-    console.error(`DB Version (user.tokenVersion): ${user.tokenVersion}`);
-    console.error(`!!! ----------------- !!!`);
+    console.error(`JWT Version (payload.tv): ${jwtVersion}`);
+    console.error(`DB Version (user.tokenVersion): ${dbVersion}`);
     
     const err = new Error("Refresh token has been revoked");
     err.statusCode = 401;

@@ -19,21 +19,16 @@ interface AuthResponse {
   refreshToken?: string
 }
 
-const TOKEN_KEY = 'token'
-const REFRESH_TOKEN_KEY = 'refresh_token'
-const USER_KEY = 'user'
+const TOKEN_KEY = 'spendwise_token'
+const USER_KEY = 'spendwise_user'
 
 export function saveAuth(auth: AuthResponse) {
   localStorage.setItem(TOKEN_KEY, auth.accessToken)
-  if (auth.refreshToken) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken)
-  }
   localStorage.setItem(USER_KEY, JSON.stringify(auth.user))
 }
 
 export function clearAuth() {
   localStorage.removeItem(TOKEN_KEY)
-  localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
 }
 
@@ -56,43 +51,42 @@ let refreshPromise: Promise<string | null> | null = null;
 export async function refreshAccessToken(): Promise<string | null> {
   // If a refresh is already in progress, return the existing promise
   if (refreshPromise) {
-    console.log('Refresh already in progress, returning existing promise');
+    console.log('[Auth] Refresh already in progress, returning existing promise');
     return refreshPromise;
   }
 
+  console.log('[Auth] Starting refreshAccessToken flow...');
   refreshPromise = (async () => {
     try {
-      console.log('--- FETCHING REFRESH TOKEN ---');
-      const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-      
       const res = await fetch(`${API_BASE}/api/auth/refresh`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        // Send refresh token in body as fallback for blocked cookies
-        body: storedRefreshToken ? JSON.stringify({ refreshToken: storedRefreshToken }) : undefined,
       });
+
+      console.log(`[Auth] Refresh response status: ${res.status}`);
 
       if (!res.ok) {
         if (res.status === 401) {
-          console.warn('Refresh token is invalid or revoked');
+          console.warn('[Auth] Refresh failed (401). Cookie might be stale or missing.');
         }
         return null;
       }
 
-      const data = (await res.json()) as { accessToken?: string; refreshToken?: string } | null;
+      const data = (await res.json()) as { accessToken?: string } | null;
       const newAccessToken = data?.accessToken;
-      if (!newAccessToken) return null;
-
-      localStorage.setItem(TOKEN_KEY, newAccessToken);
-      // Update rotate refresh token if provided
-      if (data?.refreshToken) {
-        localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+      
+      if (!newAccessToken) {
+        console.error('[Auth] Refresh succeeded but no accessToken in response');
+        return null;
       }
+
+      console.log('[Auth] Refresh successful, saving new accessToken');
+      localStorage.setItem(TOKEN_KEY, newAccessToken);
       
       return newAccessToken;
     } catch (err) {
-      console.error('Refresh token failed:', err);
+      console.error('[Auth] Refresh failed:', err);
       return null;
     } finally {
       // Clear the promise when done

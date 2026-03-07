@@ -34,9 +34,7 @@ app.use(cookieParser());
 
 // Add COOP/COEP for Google Auth and general security
 app.use((req, res, next) => {
-  // Relax headers completely for local dev to avoid COOP blocks
   res.setHeader("Cross-Origin-Opener-Policy", "unsafe-none");
-  res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
   next();
 });
 
@@ -79,11 +77,15 @@ app.use("/api/budgets", budgetRoutes);
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 app.use((err, req, res, next) => {
-  console.error("Server Error:", err);
   const status = err.statusCode || 500;
+  
+  // Log full error for server owner
+  console.error(`[Server Error] ${status} - ${err.message}`);
+  if (status === 500) console.error(err.stack);
+
   res.status(status).json({
     message: err.message || "Server error",
-    stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
+    stack: (process.env.NODE_ENV === "development" && status !== 401) ? err.stack : undefined,
   });
 });
 

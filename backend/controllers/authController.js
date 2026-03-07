@@ -1,24 +1,35 @@
 const authService = require("../services/authService");
 const User = require("../models/User");
 
-function setRefreshCookie(req, res, refreshToken) {
+const COOKIE_NAME = "spendwise_refresh";
+
+function getCookieOptions(req) {
   const isProd = process.env.NODE_ENV === "production";
-  // Dynamic secure flag: only true if it's production AND the request is actually secure (HTTPS)
-  // or if we are on Hugging Face (which handles SSL at the proxy level)
   const isSecure = isProd && (req.secure || req.headers["x-forwarded-proto"] === "https");
 
-  console.log(`Setting refresh cookie (Prod: ${isProd}, Secure: ${isSecure})`);
-  res.cookie("refreshToken", refreshToken, {
+  return {
     httpOnly: true,
     secure: isSecure,
     sameSite: isSecure ? "none" : "lax",
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-  });
+  };
 }
 
-function clearRefreshCookie(res) {
-  res.clearCookie("refreshToken", { path: "/" });
+function setRefreshCookie(req, res, refreshToken) {
+  res.cookie(COOKIE_NAME, refreshToken, getCookieOptions(req));
+}
+
+function clearRefreshCookie(req, res) {
+  const options = getCookieOptions(req);
+  delete options.maxAge;
+  
+  // Clear with standard options
+  res.clearCookie(COOKIE_NAME, options);
+  
+  // Also clear variations to be sure (especially important for localhost/Secure mismatch)
+  res.clearCookie(COOKIE_NAME, { ...options, secure: true, sameSite: "none" });
+  res.clearCookie(COOKIE_NAME, { ...options, secure: false, sameSite: "lax" });
 }
 
 async function signup(req, res, next) {
@@ -31,7 +42,6 @@ async function signup(req, res, next) {
     return res.status(201).json({
       user: result.user,
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
     });
   } catch (err) {
     next(err);
@@ -48,7 +58,6 @@ async function login(req, res, next) {
     return res.status(200).json({
       user: result.user,
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
     });
   } catch (err) {
     next(err);
@@ -57,34 +66,48 @@ async function login(req, res, next) {
 
 async function refresh(req, res, next) {
   try {
-    console.log("-----------------------------------------");
-    console.log("REFRESH ENDPOINT CALLED");
-    console.log("Cookies:", req.cookies);
-    console.log("-----------------------------------------");
-    const tokenFromCookie = req.cookies?.refreshToken;
-    const tokenFromBody = req.body?.refreshToken; // optional for Postman
-    const token = tokenFromCookie || tokenFromBody;
+    const token = req.cookies?.[COOKIE_NAME];
+    
+    console.log("--- REFRESH ATTEMPT ---");
+    console.log(`Has Cookie (${COOKIE_NAME}):`, !!token);
+    
+    if (!token) {
+      const err = new Error("Refresh token is required");
+      err.statusCode = 401;
+      throw err;
+    }
 
     const result = await authService.refresh(token);
 
+    // Issue new refresh token (rotation)
     setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(200).json({
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
     });
   } catch (err) {
+    console.error("Refresh Logic Failed:", err.message);
+    if (
+      err.message === "Refresh token has been revoked" ||
+      err.message === "Invalid or expired refresh token" ||
+      err.statusCode === 401
+    ) {
+      console.log("Clearing stale/invalid refresh cookie");
+      clearRefreshCookie(req, res);
+    }
     next(err);
   }
 }
 
 async function logout(req, res, next) {
   try {
-    await User.updateOne(
-      { _id: req.user._id },
-      { $inc: { tokenVersion: 1 } }
-    );
-    clearRefreshCookie(res);
+    if (req.user) {
+      await User.updateOne(
+        { _id: req.user._id },
+        { $inc: { tokenVersion: 1 } }
+      );
+    }
+    clearRefreshCookie(req, res);
     return res.status(200).json({ message: "Logged out" });
   } catch (err) {
     next(err);
@@ -134,12 +157,13 @@ async function googleAuth(req, res, next) {
     return res.status(200).json({
       user: result.user,
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
     });
   } catch (err) {
     console.error('Google auth error:', err)
     return res.status(400).json({ message: err.message || 'Google auth failed' })
   }
 }
+
+module.exports = { signup, login, refresh, logout, profile, forgotPassword, resetPassword, changePassword, googleAuth };
 
 module.exports = { signup, login, refresh, logout, profile, forgotPassword, resetPassword, changePassword, googleAuth };

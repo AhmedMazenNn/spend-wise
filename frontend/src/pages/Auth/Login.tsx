@@ -169,6 +169,21 @@ export function Login() {
               Sign up
             </Link>
           </p>
+
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <button
+              onClick={() => {
+                localStorage.clear();
+                window.location.reload();
+              }}
+              className="w-full text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              Troubleshoot: Clear local cache & reload
+            </button>
+            <p className="text-[10px] text-slate-300 text-center mt-1">
+              (If you still see 401 errors, please manually clear your browser cookies for localhost)
+            </p>
+          </div>
         </div>
       </motion.div>
     </div>
