@@ -46,28 +46,42 @@ export function getStoredUser(): User | null {
   }
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  // Assumes: POST /api/auth/refresh returns JSON with { accessToken }
-  const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include', // required for refresh cookie
-  })
-
-  if (!res.ok) return null
-
-  let data: unknown = null
+export async function refreshAccessToken(): Promise<string | null> {
   try {
-    data = await res.json()
+    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+    })
+
+    if (!res.ok) return null
+
+    const data = (await res.json()) as { accessToken?: string } | null
+    const newAccessToken = data?.accessToken
+    if (!newAccessToken) return null
+
+    localStorage.setItem(TOKEN_KEY, newAccessToken)
+    return newAccessToken
+  } catch (err) {
+    console.error('Refresh token failed:', err)
+    return null
+  }
+}
+
+/** 
+ * Try to restore session by refreshing token. 
+ * If successful, we fetch the profile to get fresh user data.
+ */
+export async function checkSession(): Promise<{ user: User, accessToken: string } | null> {
+  const token = await refreshAccessToken()
+  if (!token) return null
+  
+  try {
+    const profile = await fetchProfile()
+    return { user: profile.user, accessToken: token }
   } catch {
     return null
   }
-
-  const newAccessToken = (data as { accessToken?: string } | null)?.accessToken
-  if (!newAccessToken) return null
-
-  localStorage.setItem(TOKEN_KEY, newAccessToken)
-  return newAccessToken
 }
 
 async function request<T>(
