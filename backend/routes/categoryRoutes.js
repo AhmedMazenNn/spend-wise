@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { getCategories, updateCategory } = require("../controllers/categoryController");
+const { getCategories, updateCategory, deleteCategory } = require("../controllers/categoryController");
 const auth = require("../middlewares/auth");
 
 /**
@@ -47,5 +47,6 @@ router.get("/", auth, getCategories);
  *         description: Category updated
  */
 router.patch("/:id", auth, updateCategory);
+router.delete("/:id", auth, deleteCategory);
 
 module.exports = router;
