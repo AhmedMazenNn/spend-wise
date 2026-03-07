@@ -1,13 +1,17 @@
 const authService = require("../services/authService");
 const User = require("../models/User");
 
-function setRefreshCookie(res, refreshToken) {
+function setRefreshCookie(req, res, refreshToken) {
   const isProd = process.env.NODE_ENV === "production";
-  console.log(`Setting refresh cookie (Prod: ${isProd})`);
+  // Dynamic secure flag: only true if it's production AND the request is actually secure (HTTPS)
+  // or if we are on Hugging Face (which handles SSL at the proxy level)
+  const isSecure = isProd && (req.secure || req.headers["x-forwarded-proto"] === "https");
+
+  console.log(`Setting refresh cookie (Prod: ${isProd}, Secure: ${isSecure})`);
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    secure: isSecure,
+    sameSite: isSecure ? "none" : "lax",
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
@@ -22,7 +26,7 @@ async function signup(req, res, next) {
     const { name, email, password, phone } = req.body;
     const result = await authService.signup({ name, email, password, phone });
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(201).json({
       user: result.user,
@@ -39,7 +43,7 @@ async function login(req, res, next) {
     const { email, password } = req.body;
     const result = await authService.login({ email, password });
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(200).json({
       user: result.user,
@@ -53,14 +57,17 @@ async function login(req, res, next) {
 
 async function refresh(req, res, next) {
   try {
-    console.log("Refresh request cookies:", req.cookies);
+    console.log("-----------------------------------------");
+    console.log("REFRESH ENDPOINT CALLED");
+    console.log("Cookies:", req.cookies);
+    console.log("-----------------------------------------");
     const tokenFromCookie = req.cookies?.refreshToken;
     const tokenFromBody = req.body?.refreshToken; // optional for Postman
     const token = tokenFromCookie || tokenFromBody;
 
     const result = await authService.refresh(token);
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(200).json({
       accessToken: result.accessToken,
@@ -122,7 +129,7 @@ async function googleAuth(req, res, next) {
     const { idToken } = req.body;
     const result = await authService.googleAuth(idToken);
 
-    setRefreshCookie(res, result.refreshToken);
+    setRefreshCookie(req, res, result.refreshToken);
 
     return res.status(200).json({
       user: result.user,

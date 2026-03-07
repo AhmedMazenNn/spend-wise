@@ -58,6 +58,12 @@ async function login({ email, password }) {
     throw err;
   }
 
+  if (!user.passwordHash) {
+    const err = new Error("Account linked with Google. Please login with Google.");
+    err.statusCode = 401;
+    throw err;
+  }
+
   const ok = await bcrypt.compare(password, user.passwordHash);
   if (!ok) {
     const err = new Error("Invalid email or password");
@@ -81,6 +87,11 @@ async function changePassword(userId, currentPassword, newPassword) {
   if (!user) {
     const err = new Error("User not found");
     err.statusCode = 401;
+    throw err;
+  }
+  if (!user.passwordHash) {
+    const err = new Error("Cannot change password for social login accounts");
+    err.statusCode = 400;
     throw err;
   }
   const ok = await bcrypt.compare(currentPassword, user.passwordHash);
@@ -122,6 +133,12 @@ async function refresh(refreshToken) {
   }
 
   if (user.tokenVersion !== payload.tv) {
+    console.error(`!!! REVOCATION ALERT !!!`);
+    console.error(`User: ${userId}`);
+    console.error(`JWT Version (payload.tv): ${payload.tv}`);
+    console.error(`DB Version (user.tokenVersion): ${user.tokenVersion}`);
+    console.error(`!!! ----------------- !!!`);
+    
     const err = new Error("Refresh token has been revoked");
     err.statusCode = 401;
     throw err;

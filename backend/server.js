@@ -23,7 +23,9 @@ app.set("trust proxy", 1);
 
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:3000",
   "https://spend-wise-delta-rose.vercel.app",
+  process.env.CLIENT_URL,
 ];
 
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
@@ -32,6 +34,7 @@ app.use(cookieParser());
 
 // Add COOP/COEP for Google Auth and general security
 app.use((req, res, next) => {
+  // Relax headers completely for local dev to avoid COOP blocks
   res.setHeader("Cross-Origin-Opener-Policy", "unsafe-none");
   res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
   next();
@@ -90,6 +93,9 @@ console.log("Swagger paths:", Object.keys(swaggerSpec.paths || {}));
 
 (async () => {
   await connectDb();
-  console.log(`Checking environment: PORT=${PORT}, NODE_ENV=${process.env.NODE_ENV}`);
+  console.log(`*************************************************`);
+  console.log(`🚀 SERVER STARTING AT ${new Date().toISOString()}`);
+  console.log(`🚀 Checking environment: PORT=${PORT}, NODE_ENV=${process.env.NODE_ENV}`);
+  console.log(`*************************************************`);
   app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
 })();

@@ -51,35 +51,56 @@ export function getStoredUser(): User | null {
   }
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
 export async function refreshAccessToken(): Promise<string | null> {
-  try {
-    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
-    
-    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      // Send refresh token in body as fallback for blocked cookies
-      body: storedRefreshToken ? JSON.stringify({ refreshToken: storedRefreshToken }) : undefined,
-    })
-
-    if (!res.ok) return null
-
-    const data = (await res.json()) as { accessToken?: string; refreshToken?: string } | null
-    const newAccessToken = data?.accessToken
-    if (!newAccessToken) return null
-
-    localStorage.setItem(TOKEN_KEY, newAccessToken)
-    // Update rotate refresh token if provided
-    if (data?.refreshToken) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken)
-    }
-    
-    return newAccessToken
-  } catch (err) {
-    console.error('Refresh token failed:', err)
-    return null
+  // If a refresh is already in progress, return the existing promise
+  if (refreshPromise) {
+    console.log('Refresh already in progress, returning existing promise');
+    return refreshPromise;
   }
+
+  refreshPromise = (async () => {
+    try {
+      console.log('--- FETCHING REFRESH TOKEN ---');
+      const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+      
+      const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        // Send refresh token in body as fallback for blocked cookies
+        body: storedRefreshToken ? JSON.stringify({ refreshToken: storedRefreshToken }) : undefined,
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          console.warn('Refresh token is invalid or revoked');
+        }
+        return null;
+      }
+
+      const data = (await res.json()) as { accessToken?: string; refreshToken?: string } | null;
+      const newAccessToken = data?.accessToken;
+      if (!newAccessToken) return null;
+
+      localStorage.setItem(TOKEN_KEY, newAccessToken);
+      // Update rotate refresh token if provided
+      if (data?.refreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken);
+      }
+      
+      return newAccessToken;
+    } catch (err) {
+      console.error('Refresh token failed:', err);
+      return null;
+    } finally {
+      // Clear the promise when done
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 /** 

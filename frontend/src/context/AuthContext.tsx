@@ -27,12 +27,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   const refreshUser = async () => {
+    // Already loading? Avoid concurrent calls
+    if (loading && user) return; 
+    
     setLoading(true)
     try {
+      console.log('AuthProvider: Triggering checkSession...');
       const result = await checkSession()
       if (result) {
+        console.log('AuthProvider: session restored for', result.user.email);
         setUser(result.user)
       } else {
+        console.log('AuthProvider: no session, clearing auth');
         setUser(null)
         clearAuth()
       }

@@ -27,8 +27,12 @@ export async function apiRequest<T>(
   let tk = token ?? getToken()
   let res = await doFetch(tk)
   if (res.status === 401) {
-    const newToken = await refreshAccessToken()
-    if (newToken) res = await doFetch(newToken)
+    console.log('Access token expired, attempting refresh...');
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      console.log('Refresh successful, retrying request');
+      res = await doFetch(newToken);
+    }
   }
 
   let data: unknown = null
