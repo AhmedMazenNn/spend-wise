@@ -42,6 +42,7 @@ async function run() {
     confirmPassword: testPass,
     phone: "+201234567890",
   });
+  if (rSignup.status !== 201) console.log("Signup failed:", rSignup.data);
   assert(rSignup.status === 201 && rSignup.data?.accessToken, "POST /api/auth/signup");
   accessToken = rSignup.data.accessToken;
   refreshToken = rSignup.data.refreshToken;

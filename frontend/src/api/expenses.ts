@@ -17,6 +17,9 @@ export async function createExpense(data: {
   note?: string
   date?: string
   categoryId: string
+  categoryName?: string
+  categoryIcon?: string
+  categoryColor?: string
 }): Promise<{ expense: Expense }> {
   return apiRequest<{ expense: Expense }>('/api/expenses', {
     method: 'POST',

@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { getCategories } = require("../controllers/categoryController");
+const { getCategories, updateCategory } = require("../controllers/categoryController");
 const auth = require("../middlewares/auth");
 
 /**
@@ -15,5 +15,37 @@ const auth = require("../middlewares/auth");
  *         description: List of categories
  */
 router.get("/", auth, getCategories);
+
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   patch:
+ *     summary: Update a user-specific category
+ *     tags: [Categories]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               icon:
+ *                 type: string
+ *               color:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Category updated
+ */
+router.patch("/:id", auth, updateCategory);
 
 module.exports = router;

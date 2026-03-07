@@ -6,12 +6,32 @@ const Expense = require("../models/Expense");
  */
 async function createExpense(req, res, next) {
   try {
-    const { amount, title, note, date, categoryId } = req.body;
-    const userId = req.user._id;
+      const { amount, title, note, date, categoryId, categoryName, categoryIcon, categoryColor } = req.body;
+      const userId = req.user._id;
+  
+      let finalCategoryId = categoryId;
+  
+      if (categoryId === "other" && categoryName) {
+        const trimmedName = categoryName.trim();
+        let customCat = await require("../models/Category").findOne({
+          name: { $regex: new RegExp(`^${trimmedName}$`, "i") },
+          $or: [{ userId: null }, { userId }],
+        });
+  
+        if (!customCat) {
+          customCat = await require("../models/Category").create({
+            name: trimmedName,
+            userId,
+            icon: categoryIcon || "📦",
+            color: categoryColor || "#10B981",
+          });
+        }
+      finalCategoryId = customCat._id;
+    }
 
     const expense = await Expense.create({
       userId,
-      categoryId,
+      categoryId: finalCategoryId,
       amount: Number(amount),
       title: title?.trim() || "Untitled",
       note: note || null,
