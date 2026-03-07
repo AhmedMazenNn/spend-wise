@@ -10,7 +10,7 @@ function getCookieOptions(req) {
   return {
     httpOnly: true,
     secure: isSecure,
-    sameSite: isSecure ? "none" : "lax",
+    sameSite: "lax", // Proxied requests are same-site
     path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   };
