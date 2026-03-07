@@ -1,5 +1,5 @@
 ---
-title: Spend Wise
+title: Spend Wise Backend
 emoji: 💸
 colorFrom: green
 colorTo: blue
