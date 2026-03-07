@@ -5,16 +5,17 @@ FROM node:20-slim
 WORKDIR /app
 
 # Copy package.json and package-lock.json first to leverage Docker cache
-COPY package*.json ./
+# We copy from the backend directory
+COPY backend/package*.json ./
 
-# Install dependencies inside the container
+# Install dependencies
 RUN npm install
 
 # Copy the rest of the backend files
-COPY . .
+COPY backend/ .
 
 # Expose the API port (7860 is the default for Hugging Face Spaces)
 EXPOSE 7860
 
 # Start the Node.js server
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
