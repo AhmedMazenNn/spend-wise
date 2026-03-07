@@ -1,21 +1,7 @@
-import { getToken, clearAuth } from './auth'
+import { getToken, clearAuth, refreshAccessToken } from './auth'
 import { emitAuthEvent } from './authEvents'
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
-
-async function refreshAccessToken(): Promise<string | null> {
-  const res = await fetch(`${API_BASE}/api/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-  })
-  if (!res.ok) return null
-  const data = (await res.json()) as { accessToken?: string } | null
-  const token = data?.accessToken
-  if (!token) return null
-  localStorage.setItem('token', token)
-  return token
-}
 
 export async function apiRequest<T>(
   path: string,

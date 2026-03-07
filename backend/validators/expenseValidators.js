@@ -12,8 +12,13 @@ const createExpenseValidator = [
     .exists({ checkFalsy: true })
     .withMessage("Category is required")
     .bail()
-    .isMongoId()
-    .withMessage("Invalid category ID"),
+    .custom((value) => {
+      console.log("Validating categoryId:", value, typeof value);
+      if (value === "other") return true;
+      const isMongoId = /^[0-9a-fA-F]{24}$/.test(String(value));
+      if (isMongoId) return true;
+      throw new Error("Invalid category ID");
+    }),
 
   body("title")
     .optional()

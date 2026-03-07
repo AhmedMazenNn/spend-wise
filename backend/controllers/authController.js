@@ -73,7 +73,7 @@ async function logout(req, res, next) {
       { _id: req.user._id },
       { $inc: { tokenVersion: 1 } }
     );
-    res.clearCookie("refreshToken", { path: "/api/auth" });
+    clearRefreshCookie(res);
     return res.status(200).json({ message: "Logged out" });
   } catch (err) {
     next(err);

@@ -18,19 +18,31 @@ const swaggerSpec = require("./config/swagger");
 
 const app = express();
 
-app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://spend-wise-delta-rose.vercel.app",
+];
 
+app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.use(cookieParser());
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
-    credentials: true, // IMPORTANT for cookies
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE" ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["set-cookie"],
   })
 );
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -39,15 +51,6 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/budgets", budgetRoutes);
-const PORT = process.env.PORT || 5000;
-
-app.use((err, req, res, next) => {
-  const status = err.statusCode || 500;
-  res.status(status).json({
-    message: err.message || "Server error",
-  });
-});
-
 
 /**
  * @openapi
@@ -60,7 +63,17 @@ app.use((err, req, res, next) => {
  */
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+app.use((err, req, res, next) => {
+  const status = err.statusCode || 500;
+  res.status(status).json({
+    message: err.message || "Server error",
+  });
+});
+
+const PORT = process.env.PORT || 7860;
+
 console.log("Swagger paths:", Object.keys(swaggerSpec.paths || {}));
+
 (async () => {
   await connectDb();
   app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

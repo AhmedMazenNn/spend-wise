@@ -9,15 +9,15 @@ import Home from './pages/Dashboard/Home'
 import { Report } from './pages/Dashboard/Report'
 import Transactions from './pages/Dashboard/Transactions'
 import { RequireAuth } from './components/RequireAuth'
-
 import { Settings } from './pages/Dashboard/Settings'
 import { Admin } from './pages/Dashboard/Admin'
 import { RequireAdmin } from './components/RequireAdmin'
 import { NotFound } from './pages/NotFound'
+import { AuthProvider } from './context/AuthContext'
 
 const App = () => {
   return (
-    <div>
+    <AuthProvider>
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
@@ -35,7 +35,7 @@ const App = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Router>
-    </div>
+    </AuthProvider>
   )
 }
 
