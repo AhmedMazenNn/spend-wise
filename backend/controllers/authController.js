@@ -2,17 +2,19 @@ const authService = require("../services/authService");
 const User = require("../models/User");
 
 function setRefreshCookie(res, refreshToken) {
+  const isProd = process.env.NODE_ENV === "production";
+  console.log(`Setting refresh cookie (Prod: ${isProd})`);
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/api/auth",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 }
 
 function clearRefreshCookie(res) {
-  res.clearCookie("refreshToken", { path: "/api/auth" });
+  res.clearCookie("refreshToken", { path: "/" });
 }
 
 async function signup(req, res, next) {
@@ -51,6 +53,7 @@ async function login(req, res, next) {
 
 async function refresh(req, res, next) {
   try {
+    console.log("Refresh request cookies:", req.cookies);
     const tokenFromCookie = req.cookies?.refreshToken;
     const tokenFromBody = req.body?.refreshToken; // optional for Postman
     const token = tokenFromCookie || tokenFromBody;
@@ -61,6 +64,7 @@ async function refresh(req, res, next) {
 
     return res.status(200).json({
       accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
     });
   } catch (err) {
     next(err);

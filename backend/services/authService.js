@@ -16,11 +16,13 @@ function signAccessToken(user) {
 
 /** Stateless refresh token: includes tokenVersion so logout (tv bump) invalidates it. No DB storage. */
 function signRefreshToken(user) {
+  // Fallback for older Node versions where randomUUID is not available on crypto directly
+  const jti = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString("hex");
   return jwt.sign(
     {
       sub: user._id.toString(),
       tv: user.tokenVersion ?? 0,
-      jti: crypto.randomUUID(),
+      jti,
     },
     process.env.REFRESH_TOKEN_SECRET,
     { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "30d" }

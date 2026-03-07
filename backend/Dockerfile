@@ -1,5 +1,5 @@
-# Use Node.js LTS (20) as the base image
-FROM node:20-alpine
+# Use Node.js LTS (20) slim as the base image (more robust DNS than alpine)
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
@@ -13,8 +13,8 @@ RUN npm install
 # Copy the rest of the backend files
 COPY . .
 
-# Expose the API port
-EXPOSE 8000
+# Expose the API port (7860 is the default for Hugging Face Spaces)
+EXPOSE 7860
 
 # Start the Node.js server
 CMD ["npm", "start"]

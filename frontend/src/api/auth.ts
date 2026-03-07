@@ -20,15 +20,20 @@ interface AuthResponse {
 }
 
 const TOKEN_KEY = 'token'
+const REFRESH_TOKEN_KEY = 'refresh_token'
 const USER_KEY = 'user'
 
 export function saveAuth(auth: AuthResponse) {
   localStorage.setItem(TOKEN_KEY, auth.accessToken)
+  if (auth.refreshToken) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, auth.refreshToken)
+  }
   localStorage.setItem(USER_KEY, JSON.stringify(auth.user))
 }
 
 export function clearAuth() {
   localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
   localStorage.removeItem(USER_KEY)
 }
 
@@ -48,19 +53,28 @@ export function getStoredUser(): User | null {
 
 export async function refreshAccessToken(): Promise<string | null> {
   try {
+    const storedRefreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+    
     const res = await fetch(`${API_BASE}/api/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
+      // Send refresh token in body as fallback for blocked cookies
+      body: storedRefreshToken ? JSON.stringify({ refreshToken: storedRefreshToken }) : undefined,
     })
 
     if (!res.ok) return null
 
-    const data = (await res.json()) as { accessToken?: string } | null
+    const data = (await res.json()) as { accessToken?: string; refreshToken?: string } | null
     const newAccessToken = data?.accessToken
     if (!newAccessToken) return null
 
     localStorage.setItem(TOKEN_KEY, newAccessToken)
+    // Update rotate refresh token if provided
+    if (data?.refreshToken) {
+      localStorage.setItem(REFRESH_TOKEN_KEY, data.refreshToken)
+    }
+    
     return newAccessToken
   } catch (err) {
     console.error('Refresh token failed:', err)
