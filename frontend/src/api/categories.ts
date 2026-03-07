@@ -23,3 +23,9 @@ export async function updateCategory(
     body: JSON.stringify(data),
   })
 }
+
+export async function deleteCategory(id: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>(`/api/categories/${id}`, {
+    method: 'DELETE',
+  })
+}

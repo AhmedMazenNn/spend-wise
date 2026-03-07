@@ -60,4 +60,24 @@ async function updateCategory(req, res, next) {
   }
 }
 
-module.exports = { getCategories, updateCategory };
+/**
+ * DELETE /api/categories/:id
+ * Allows deleting user-specific categories
+ */
+async function deleteCategory(req, res, next) {
+  try {
+    const userId = req.user._id;
+    const { id } = req.params;
+
+    const category = await Category.findOneAndDelete({ _id: id, userId });
+    if (!category) {
+      return res.status(404).json({ message: "Category not found or access denied" });
+    }
+
+    return res.status(200).json({ message: "Category deleted successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getCategories, updateCategory, deleteCategory };

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, Edit2, Palette, Smile } from 'lucide-react'
+import { X, Check, Edit2, Palette, Smile, Trash2 } from 'lucide-react'
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react'
 import { createExpense } from '../api/expenses'
-import { fetchCategories, updateCategory } from '../api/categories'
+import { fetchCategories, updateCategory, deleteCategory } from '../api/categories'
 import type { Category } from '../api/categories'
 
 interface AddExpenseModalProps {
@@ -100,6 +100,21 @@ export function AddExpenseModal({
       setEditingCategoryId(null)
     } catch (err) {
       setError('Failed to update category')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteCategory = async () => {
+    if (!editingCategoryId || !window.confirm('Are you sure you want to delete this category?')) return
+    setLoading(true)
+    try {
+      await deleteCategory(editingCategoryId)
+      await loadCategories()
+      setEditingCategoryId(null)
+      setCategoryId(categories[0]?.id || '')
+    } catch (err) {
+      setError('Failed to delete category')
     } finally {
       setLoading(false)
     }
@@ -401,13 +416,23 @@ export function AddExpenseModal({
                   </button>
                   
                   {editingCategoryId && (
-                    <button
-                      type="button"
-                      onClick={() => setEditingCategoryId(null)}
-                      className="w-full py-2 text-slate-400 text-sm hover:text-slate-600 transition-colors"
-                    >
-                      Cancel Editing
-                    </button>
+                    <div className="space-y-2">
+                      <button
+                        type="button"
+                        onClick={handleDeleteCategory}
+                        className="w-full py-3 flex items-center justify-center gap-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors text-sm font-medium"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Delete Category
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingCategoryId(null)}
+                        className="w-full py-2 text-slate-400 text-sm hover:text-slate-600 transition-colors"
+                      >
+                        Cancel Editing
+                      </button>
+                    </div>
                   )}
                 </form>
               </div>
