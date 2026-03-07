@@ -32,7 +32,7 @@ app.use(cookieParser());
 
 // Add COOP/COEP for Google Auth and general security
 app.use((req, res, next) => {
-  res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+  res.setHeader("Cross-Origin-Opener-Policy", "unsafe-none");
   res.setHeader("Cross-Origin-Embedder-Policy", "unsafe-none");
   next();
 });
@@ -90,5 +90,6 @@ console.log("Swagger paths:", Object.keys(swaggerSpec.paths || {}));
 
 (async () => {
   await connectDb();
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  console.log(`Checking environment: PORT=${PORT}, NODE_ENV=${process.env.NODE_ENV}`);
+  app.listen(PORT, "0.0.0.0", () => console.log(`🚀 Server running on port ${PORT}`));
 })();
