@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { googleAuth } from '../api/auth'
+import { useAuth } from '../context/AuthContext'
 
 declare global {
   interface Window {
@@ -9,6 +9,7 @@ declare global {
 }
 
 export function GoogleAuthButton({ }) {
+  const { googleLogin } = useAuth()
   const navigate = useNavigate()
   const btnRef = useRef<HTMLDivElement | null>(null)
   const [, setIsLoading] = useState(false)
@@ -20,7 +21,7 @@ export function GoogleAuthButton({ }) {
     setIsLoading(true)
     setError(null)
     try {
-      await googleAuth(response.credential)
+      await googleLogin(response.credential)
       navigate('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed.')

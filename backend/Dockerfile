@@ -4,8 +4,6 @@ FROM node:20
 # Set working directory
 WORKDIR /app
 
-# Diagnostic step to check connectivity early in build
-RUN curl -Is https://huggingface.co/ || echo "Warning: Network diagnostic failed"
 
 # Copy package.json and package-lock.json first to leverage Docker cache
 COPY package*.json ./

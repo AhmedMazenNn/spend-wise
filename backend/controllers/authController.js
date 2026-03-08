@@ -65,8 +65,9 @@ async function login(req, res, next) {
 }
 
 async function refresh(req, res, next) {
+  let token = null;
   try {
-    const token = req.cookies?.[COOKIE_NAME];
+    token = req.cookies?.[COOKIE_NAME];
     
     console.log("--- REFRESH ATTEMPT ---");
     console.log(`Has Cookie (${COOKIE_NAME}):`, !!token);
@@ -88,9 +89,11 @@ async function refresh(req, res, next) {
   } catch (err) {
     console.error("Refresh Logic Failed:", err.message);
     if (
-      err.message === "Refresh token has been revoked" ||
-      err.message === "Invalid or expired refresh token" ||
-      err.statusCode === 401
+      token && (
+        err.message === "Refresh token has been revoked" ||
+        err.message === "Invalid or expired refresh token" ||
+        err.statusCode === 401
+      )
     ) {
       console.log("Clearing stale/invalid refresh cookie");
       clearRefreshCookie(req, res);
@@ -163,7 +166,5 @@ async function googleAuth(req, res, next) {
     return res.status(400).json({ message: err.message || 'Google auth failed' })
   }
 }
-
-module.exports = { signup, login, refresh, logout, profile, forgotPassword, resetPassword, changePassword, googleAuth };
 
 module.exports = { signup, login, refresh, logout, profile, forgotPassword, resetPassword, changePassword, googleAuth };

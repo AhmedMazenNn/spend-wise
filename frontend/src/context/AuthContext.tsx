@@ -6,7 +6,8 @@ import {
   logout as apiLogout, 
   checkSession, 
   clearAuth,
-  getStoredUser
+  getStoredUser,
+  googleAuth as apiGoogleAuth
 } from '../api/auth'
 import { onAuthEvent } from '../api/authEvents'
 
@@ -18,6 +19,7 @@ interface AuthContextType {
   signup: (data: any) => Promise<void>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
+  googleLogin: (credential: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,7 +34,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isRefreshing.current = true
     
     console.log('[AuthProvider] refreshUser starting...');
-    setLoading(true)
+    
+    // Only set loading if we don't have a user yet (initial load)
+    const hasExistingUser = !!user || !!getStoredUser();
+    if (!hasExistingUser) {
+      setLoading(true)
+    }
+
     try {
       console.log('[AuthProvider] Triggering checkSession...');
       const result = await checkSession()
@@ -40,14 +48,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('[AuthProvider] Session restored for:', result.user.email);
         setUser(result.user)
       } else {
-        console.log('[AuthProvider] No session found (401 is normal if unlogged), clearing state');
-        setUser(null)
-        clearAuth()
+        // If checkSession failed but we have a stored user, DON'T wipe immediately.
+        // Let the subsequent API calls handle 401s if the token is truly dead.
+        if (!hasExistingUser) {
+          console.log('[AuthProvider] No session found, clearing state');
+          setUser(null)
+          clearAuth()
+        } else {
+          console.log('[AuthProvider] Refresh failed, but keeping existing session for now');
+        }
       }
     } catch (err) {
       console.error('[AuthProvider] Session restoration failed:', err)
-      setUser(null)
-      clearAuth()
+      if (!hasExistingUser) {
+        setUser(null)
+        clearAuth()
+      }
     } finally {
       setLoading(false)
       isRefreshing.current = false
@@ -103,6 +119,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(result.user)
   }
 
+  const googleLogin = async (credential: string) => {
+    const result = await apiGoogleAuth(credential)
+    setUser(result.user)
+  }
+
   const logout = async () => {
     try {
       await apiLogout()
@@ -121,6 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signup,
         logout,
         refreshUser,
+        googleLogin,
       }}
     >
       {children}

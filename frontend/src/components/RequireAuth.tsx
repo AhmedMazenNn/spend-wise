@@ -17,6 +17,7 @@ export function RequireAuth() {
   console.log('[RequireAuth] Rendering. Auth:', isAuthenticated);
 
   if (!isAuthenticated) {
+    console.log('[RequireAuth] Not authenticated, redirecting to /');
     return <Navigate to="/" replace state={{ from: location }} />
   }
 
