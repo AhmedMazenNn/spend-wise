@@ -81,16 +81,17 @@ async function signup({ name, email, password, phone }) {
         }
       );
 
-      try {
-        await sendVerificationEmail(existing.email, raw);
-        console.log(`[auth] Verification email re-sent to ${existing.email}`);
-      } catch (emailErr) {
-        console.error(
-          "[emailService] ❌ Failed to resend verification email:",
-          emailErr.message
-        );
-        console.error("[emailService] Full error:", emailErr);
-      }
+      sendVerificationEmail(existing.email, raw)
+        .then(() => {
+          console.log(`[auth] Verification email re-sent to ${existing.email}`);
+        })
+        .catch((emailErr) => {
+          console.error(
+            "[emailService] ❌ Failed to resend verification email:",
+            emailErr.message
+          );
+          console.error("[emailService] Full error:", emailErr);
+        });
 
       return { requiresVerification: true, email: existing.email };
     }
@@ -114,16 +115,17 @@ async function signup({ name, email, password, phone }) {
     verificationTokenExpires: getVerifyExpiresAt(),
   });
 
-  try {
-    await sendVerificationEmail(email, raw);
-    console.log(`[auth] Verification email sent to ${email}`);
-  } catch (emailErr) {
-    console.error(
-      "[emailService] ❌ Failed to send verification email:",
-      emailErr.message
-    );
-    console.error("[emailService] Full error:", emailErr);
-  }
+  sendVerificationEmail(email, raw)
+    .then(() => {
+      console.log(`[auth] Verification email sent to ${email}`);
+    })
+    .catch((emailErr) => {
+      console.error(
+        "[emailService] ❌ Failed to send verification email:",
+        emailErr.message
+      );
+      console.error("[emailService] Full error:", emailErr);
+    });
 
   return { requiresVerification: true, email };
 }
