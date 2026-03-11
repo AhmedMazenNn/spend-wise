@@ -5,6 +5,8 @@ import {
 } from 'react-router-dom'
 import Login from './pages/Auth/Login'
 import Register from './pages/Auth/Register'
+import { VerifyEmailPending } from './pages/Auth/VerifyEmailPending'
+import { VerifyEmailResult } from './pages/Auth/VerifyEmailResult'
 import Home from './pages/Dashboard/Home'
 import { Report } from './pages/Dashboard/Report'
 import Transactions from './pages/Dashboard/Transactions'
@@ -20,25 +22,31 @@ import './i18n'
 const App = () => {
   return (
     <ThemeProvider>
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-        {/* Protected Routes */}
-        <Route element={<RequireAuth />}>
-          <Route path="/dashboard" element={<Home />} />
-          <Route path="/transactions" element={<Transactions />} />
-          <Route path="/report" element={<Report />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route element={<RequireAdmin />}>
-            <Route path="/admin" element={<Admin />} />
-          </Route>
-        </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
+      <AuthProvider>
+        <Router>
+          <Routes>
+            {/* Public auth routes */}
+            <Route path="/" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            {/* Email verification pages (public — no auth needed) */}
+            <Route path="/verify-email-pending" element={<VerifyEmailPending />} />
+            <Route path="/verify-email" element={<VerifyEmailResult />} />
+
+            {/* Protected Routes */}
+            <Route element={<RequireAuth />}>
+              <Route path="/dashboard" element={<Home />} />
+              <Route path="/transactions" element={<Transactions />} />
+              <Route path="/report" element={<Report />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route element={<RequireAdmin />}>
+                <Route path="/admin" element={<Admin />} />
+              </Route>
+            </Route>
+
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
     </ThemeProvider>
   )
 }

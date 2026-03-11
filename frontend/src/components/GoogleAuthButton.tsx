@@ -1,3 +1,4 @@
+// src/components/GoogleAuthButton.tsx
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -8,24 +9,29 @@ declare global {
   }
 }
 
-export function GoogleAuthButton({ }) {
+interface GoogleAuthButtonProps {
+  /** 'login'    → button is on the Login page: only signs in existing users */
+  /** 'register' → button is on the Register page: only creates new users   */
+  intent: 'login' | 'register'
+  /** Optional override for the button label text */
+  text?: 'signin_with' | 'signup_with' | 'continue_with' | 'signin'
+}
+
+export function GoogleAuthButton({ intent, text }: GoogleAuthButtonProps) {
   const { googleLogin } = useAuth()
   const navigate = useNavigate()
   const btnRef = useRef<HTMLDivElement | null>(null)
-  const [, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string
 
   const handleCredentialResponse = async (response: { credential: string }) => {
-    setIsLoading(true)
     setError(null)
     try {
-      await googleLogin(response.credential)
+      await googleLogin(response.credential, intent)
       navigate('/dashboard')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed.')
-      setIsLoading(false)
     }
   }
 
@@ -38,15 +44,14 @@ export function GoogleAuthButton({ }) {
         callback: handleCredentialResponse,
         auto_select: false,
         cancel_on_tap_outside: true,
-        use_fedcm_for_prompt: true, // ok to keep
+        use_fedcm_for_prompt: true,
       })
 
-      // ✅ Render the official Google button (reliable)
       window.google.accounts.id.renderButton(btnRef.current, {
         theme: 'outline',
         size: 'large',
         width: 360,
-        text: 'continue_with',
+        text: text ?? (intent === 'register' ? 'signup_with' : 'signin_with'),
       })
     }
 
@@ -56,16 +61,14 @@ export function GoogleAuthButton({ }) {
       script?.addEventListener('load', initGoogle)
       return () => script?.removeEventListener('load', initGoogle)
     }
-  }, [clientId])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientId, intent])
 
   return (
     <div className="w-full">
-      {/* Google rendered button */}
       <div ref={btnRef} className="w-full flex justify-center" />
-
-      {/* Optional: your error UI */}
       {error && (
-        <p className="mt-2 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-center">
+        <p className="mt-3 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 text-center">
           {error}
         </p>
       )}
