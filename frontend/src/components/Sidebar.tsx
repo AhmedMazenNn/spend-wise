@@ -12,7 +12,7 @@ import {
   Menu,
   Moon,
   Sun,
-  Globe
+  Globe,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getStoredUser, logout } from '../api/auth'
@@ -28,6 +28,8 @@ export function Sidebar() {
 
   const user = getStoredUser()
   const isAdmin = (user?.role || '').toLowerCase() === 'admin'
+  const isArabic = i18n.language === 'ar'
+  const dir = isArabic ? 'rtl' : 'ltr'
 
   const navItems = [
     { name: t('Dashboard'), icon: LayoutDashboard, path: '/dashboard' },
@@ -47,8 +49,6 @@ export function Sidebar() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState<string | null>(null)
-
-  // Mobile sidebar state
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const handleLogout = async () => {
@@ -77,7 +77,10 @@ export function Sidebar() {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-white/10">
+      <div
+        dir={dir}
+        className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-white/10"
+      >
         <div className="h-16 px-4 flex items-center justify-between">
           <button
             type="button"
@@ -88,7 +91,7 @@ export function Sidebar() {
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-2 min-w-0">
+          <div className={`flex items-center gap-2 min-w-0 ${isArabic ? 'flex-row-reverse' : ''}`}>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
               💸
             </div>
@@ -103,16 +106,16 @@ export function Sidebar() {
 
       {/* Desktop sidebar */}
       <aside
-        className="
-          hidden lg:flex
-          fixed left-0 top-0 h-screen w-64 text-white flex-col z-20
-          bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950
-          border-r border-white/10
-        "
+        dir={dir}
+        className={[
+          'hidden lg:flex fixed top-0 h-screen w-64 text-white flex-col z-20',
+          'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950',
+          isArabic ? 'right-0 border-l border-white/10' : 'left-0 border-r border-white/10',
+        ].join(' ')}
       >
         {/* Logo */}
         <div className="p-8">
-          <div className="flex items-center gap-3">
+          <div className={`flex items-center gap-3 ${isArabic ? 'flex-row-reverse justify-end text-right' : ''}`}>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
               💸
             </div>
@@ -139,13 +142,14 @@ export function Sidebar() {
 
                 <div
                   className={[
-                    'relative flex items-center gap-3 px-4 py-3 rounded-full transition-colors duration-200',
+                    'relative flex items-center px-4 py-3 rounded-full transition-colors duration-200',
+                    isArabic ? 'flex-row-reverse gap-3 text-right' : 'gap-3',
                     isActive
                       ? 'text-white'
                       : 'text-slate-300 hover:text-white hover:bg-white/10',
                   ].join(' ')}
                 >
-                  <item.icon className="w-5 h-5" />
+                  <item.icon className="w-5 h-5 shrink-0" />
                   <span className="font-medium">{item.name}</span>
                 </div>
               </Link>
@@ -164,7 +168,7 @@ export function Sidebar() {
           </button>
           <button
             onClick={toggleLanguage}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+            className={`p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center ${isArabic ? 'flex-row-reverse' : ''} gap-2`}
             title={t('English') + ' / ' + t('Arabic')}
           >
             <Globe className="w-5 h-5" />
@@ -173,7 +177,12 @@ export function Sidebar() {
         </div>
 
         <div className="p-4 mt-auto border-t border-white/10">
-          <div className="rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5">
+          <div
+            className={[
+              'rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5',
+              isArabic ? 'flex-row-reverse text-right' : '',
+            ].join(' ')}
+          >
             {user?.picture ? (
               <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
             ) : (
@@ -222,20 +231,27 @@ export function Sidebar() {
             />
 
             <motion.aside
-              className="
-                lg:hidden fixed left-0 top-0 bottom-0 z-50 w-[86vw] max-w-xs
-                text-white flex flex-col
-                bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950
-                border-r border-white/10
-              "
-              initial={{ x: -40, opacity: 0 }}
+              dir={dir}
+              className={[
+                'lg:hidden fixed top-0 bottom-0 z-50 w-[86vw] max-w-xs text-white flex flex-col',
+                'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950',
+                isArabic
+                  ? 'right-0 border-l border-white/10'
+                  : 'left-0 border-r border-white/10',
+              ].join(' ')}
+              initial={{ x: isArabic ? 40 : -40, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -40, opacity: 0 }}
+              exit={{ x: isArabic ? 40 : -40, opacity: 0 }}
               transition={{ duration: 0.18 }}
             >
               {/* Drawer header */}
-              <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={[
+                  'p-4 border-b border-white/10 flex items-center justify-between',
+                  isArabic ? 'flex-row-reverse' : '',
+                ].join(' ')}
+              >
+                <div className={`flex items-center gap-3 min-w-0 ${isArabic ? 'flex-row-reverse text-right' : ''}`}>
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
                     💸
                   </div>
@@ -280,13 +296,14 @@ export function Sidebar() {
 
                       <div
                         className={[
-                          'relative flex items-center gap-3 px-4 py-3 rounded-full transition-colors duration-200',
+                          'relative flex items-center px-4 py-3 rounded-full transition-colors duration-200',
+                          isArabic ? 'flex-row-reverse gap-3 text-right' : 'gap-3',
                           isActive
                             ? 'text-white'
                             : 'text-slate-300 hover:text-white hover:bg-white/10',
                         ].join(' ')}
                       >
-                        <item.icon className="w-5 h-5" />
+                        <item.icon className="w-5 h-5 shrink-0" />
                         <span className="font-medium">{item.name}</span>
                       </div>
                     </Link>
@@ -305,7 +322,7 @@ export function Sidebar() {
                 </button>
                 <button
                   onClick={toggleLanguage}
-                  className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+                  className={`p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center ${isArabic ? 'flex-row-reverse' : ''} gap-2`}
                   title={t('English') + ' / ' + t('Arabic')}
                 >
                   <Globe className="w-5 h-5" />
@@ -314,7 +331,12 @@ export function Sidebar() {
               </div>
 
               <div className="p-4">
-                <div className="rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5">
+                <div
+                  className={[
+                    'rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5',
+                    isArabic ? 'flex-row-reverse text-right' : '',
+                  ].join(' ')}
+                >
                   {user?.picture ? (
                     <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
                   ) : (
@@ -357,12 +379,12 @@ export function Sidebar() {
       <AnimatePresence>
         {confirmOpen && (
           <motion.div
+            dir={dir}
             className="fixed inset-0 z-[60] flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Backdrop */}
             <button
               type="button"
               className="absolute inset-0 bg-black/50"
@@ -370,7 +392,6 @@ export function Sidebar() {
               aria-label="Close logout dialog"
             />
 
-            {/* Dialog */}
             <motion.div
               className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -381,7 +402,12 @@ export function Sidebar() {
               aria-modal="true"
               aria-label="Confirm logout"
             >
-              <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+              <div
+                className={[
+                  'p-5 border-b border-slate-100 flex items-center justify-between',
+                  isArabic ? 'flex-row-reverse' : '',
+                ].join(' ')}
+              >
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
                   {t('Confirm logout')}
                 </h3>
@@ -395,7 +421,7 @@ export function Sidebar() {
                 </button>
               </div>
 
-              <div className="p-5">
+              <div className={`p-5 ${isArabic ? 'text-right' : ''}`}>
                 <p className="text-sm text-slate-600 dark:text-slate-300">
                   {t('Are you sure you want to log out?')}
                 </p>

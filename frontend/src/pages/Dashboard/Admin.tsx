@@ -32,6 +32,7 @@ import {
   type User,
   getStoredUser,
 } from '../../api/auth'
+import i18n from '../../i18n'
 
 type UserRow = User & {
   initials: string
@@ -323,12 +324,17 @@ export function Admin() {
     ]
   }, [activeUsers, totalUsers, newThisWeek])
 
+  const isArabic = i18n.language === 'ar'
+
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 z-0">
       <Sidebar />
 
       {/* ✅ Responsive main: no ml on mobile, add top padding for mobile top bar, responsive padding */}
-      <main className="flex-1 lg:ml-64 pt-20 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+     <main
+          dir={isArabic ? 'rtl' : 'ltr'}
+          className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+        >
         <motion.div
           initial="hidden"
           animate="visible"

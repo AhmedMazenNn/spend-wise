@@ -143,12 +143,17 @@ export function TransactionsPage() {
     visible: { y: 0, opacity: 1 },
   }
 
+  const isArabic = i18n.language === 'ar'
+
   return (
     <div className="flex min-h-screen bg-main">
       <Sidebar />
 
       {/* ✅ responsive spacing with sidebar */}
-      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+      <main
+        dir={isArabic ? 'rtl' : 'ltr'}
+        className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+      >
         <motion.div
           initial="hidden"
           animate="visible"
