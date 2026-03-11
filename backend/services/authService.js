@@ -64,19 +64,34 @@ function publicUser(user) {
 }
 
 // ─── signup ───────────────────────────────────────────────────────────────────
-
 async function signup({ name, email, password, phone }) {
+  email = email.toLowerCase().trim();
+
   const existing = await User.findOne({ email });
 
   if (existing) {
-    // If account exists but is NOT verified, resend the link instead of hard-rejecting
     if (!existing.isVerified) {
       const { raw, hash } = generateVerificationToken();
+
       await User.updateOne(
         { _id: existing._id },
-        { verificationTokenHash: hash, verificationTokenExpires: getVerifyExpiresAt() }
+        {
+          verificationTokenHash: hash,
+          verificationTokenExpires: getVerifyExpiresAt(),
+        }
       );
-      await sendVerificationEmail(existing.email, raw);
+
+      try {
+        await sendVerificationEmail(existing.email, raw);
+        console.log(`[auth] Verification email re-sent to ${existing.email}`);
+      } catch (emailErr) {
+        console.error(
+          "[emailService] ❌ Failed to resend verification email:",
+          emailErr.message
+        );
+        console.error("[emailService] Full error:", emailErr);
+      }
+
       return { requiresVerification: true, email: existing.email };
     }
 
@@ -99,21 +114,19 @@ async function signup({ name, email, password, phone }) {
     verificationTokenExpires: getVerifyExpiresAt(),
   });
 
-  // Send verification email — await so any SMTP errors surface clearly in logs
   try {
     await sendVerificationEmail(email, raw);
     console.log(`[auth] Verification email sent to ${email}`);
   } catch (emailErr) {
-    // Log full error so misconfigured SMTP is immediately visible
-    console.error("[emailService] ❌ Failed to send verification email:", emailErr.message);
+    console.error(
+      "[emailService] ❌ Failed to send verification email:",
+      emailErr.message
+    );
     console.error("[emailService] Full error:", emailErr);
-    // Still return success — account is created. User can resend from the pending page.
   }
 
-  // Do NOT issue tokens yet — user must verify first
   return { requiresVerification: true, email };
 }
-
 // ─── login ────────────────────────────────────────────────────────────────────
 
 async function login({ email, password }) {
