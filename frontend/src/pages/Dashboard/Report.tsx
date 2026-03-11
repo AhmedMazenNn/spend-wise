@@ -85,6 +85,7 @@ function getPeriodLabel(
 export function Report() {
   const { t, i18n } = useTranslation()
   const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US'
+  const isArabic = i18n.language === 'ar'
 
   const now = new Date()
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -402,7 +403,10 @@ export function Report() {
       <Sidebar />
 
       {/* ✅ responsive left spacing so layout doesn't break */}
-      <main className="flex-1 ml-0 lg:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+      <main
+  dir={isArabic ? 'rtl' : 'ltr'}
+  className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+>
         <div className="max-w-7xl mx-auto space-y-8 pt-16 lg:pt-0">
           {/* Header stays visible always */}
           <motion.header initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="space-y-6">

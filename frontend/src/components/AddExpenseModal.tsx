@@ -387,7 +387,7 @@ export function AddExpenseModal({
                           }`}
                         >
                           <span>✨</span>
-                          <span className="font-medium text-sm">{t('Other...')}</span>
+                          <span className="font-medium text-sm">{t('Add Other...')}</span>
                           {categoryId === 'other' && (
                             <Check className={`w-3 h-3 ${isArabic ? 'mr-1' : 'ml-1'}`} />
                           )}

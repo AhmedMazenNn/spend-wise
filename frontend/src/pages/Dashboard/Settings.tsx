@@ -13,6 +13,7 @@ import {
 } from '../../api/auth'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import i18n from '../../i18n'
 
 function initialsFromName(name?: string) {
   const n = (name || '').trim()
@@ -148,6 +149,7 @@ export function Settings() {
       setSavingPassword(false)
     }
   }
+  const isArabic = i18n.language === 'ar'
 
   const handleDeleteAccount = async () => {
     setDeleteLoading(true)
@@ -165,13 +167,17 @@ export function Settings() {
       setDeleteOpen(false)
     }
   }
+  
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 z-0">
       <Sidebar />
 
       {/* ✅ Responsive main: no ml on mobile, add top padding for mobile top bar, responsive padding */}
-      <main className="flex-1 lg:ml-64 pt-20 lg:pt-0 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+      <main
+  dir={isArabic ? 'rtl' : 'ltr'}
+  className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

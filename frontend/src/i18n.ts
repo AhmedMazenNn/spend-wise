@@ -153,7 +153,15 @@ const resources = {
       "Failed to update user.": "Failed to update user.",
       "Failed to delete user.": "Failed to delete user.",
       "Inactive": "Inactive",
-      "New": "New"
+      "Add Expense": "Add Expense",
+      "New": "New",
+      "Note (Optional)": "Note (Optional)",
+      "New Category Name": "New Category Name",
+      "e.g., Subscription, Gym, Gift": "e.g., Subscription, Gym, Gift",
+      "Icon": "Icon",
+      "Color": "Color",
+      "Save Expense": "Save Expense",
+      "Failed to save expense.": "Failed to save expense."
     }
   },
   ar: {
@@ -306,7 +314,22 @@ const resources = {
       "Failed to update user.": "فشل تحديث المستخدم.",
       "Failed to delete user.": "فشل حذف المستخدم.",
       "Inactive": "غير نشط",
-      "New": "جديد"
+      "Add Expense": "إضافة مصروف",
+      "New": "جديد",
+      "Note (Optional)": "ملاحظة (اختياري)",
+      "Failed to save expense.": "فشل حفظ المصروف.",
+      "Failed to update expense.": "فشل تحديث المصروف.",
+      "New Category Name": "اسم الفئة الجديد",
+      "e.g., Subscription, Gym, Gift": "مثال: الاشتراك، الرياضة، الهدايا",
+      "Icon": "الرمز",
+      "Color": "اللون",
+      "Save Expense": "حفظ المصروف",   
+      "Bills": "الفواتير",
+      "Total Spent": "إجمالي المصروفات", 
+      "Daily Average": "متوسط المصروفات اليومية",
+      "Highest Day": "أعلى يوم",
+      "Top Category": "أعلى فئة",
+      "Search transactions...": "بحث عن المصروفات...",
     }
   }
 };

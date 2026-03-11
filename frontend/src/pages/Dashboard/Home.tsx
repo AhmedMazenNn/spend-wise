@@ -33,6 +33,7 @@ const getGreeting = (t: any) => {
 
 function Home() {
   const { t, i18n } = useTranslation()
+  const isArabic = i18n.language === 'ar'
   const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US'
   const user = getStoredUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -140,32 +141,40 @@ function Home() {
   const budgetStats = data?.budgetStats ?? null
 
   if (loading && !data) {
-    return (
-      <div className="flex min-h-screen bg-main">
-        <Sidebar />
-        <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-          <div className="text-slate-500">Loading...</div>
-        </main>
-      </div>
-    )
-  }
-
+  return (
+    <div className="flex min-h-screen bg-main">
+      <Sidebar />
+      <main
+        dir={isArabic ? 'rtl' : 'ltr'}
+        className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 flex items-center justify-center`}
+      >
+        <div className="text-slate-500">{t('Loading...')}</div>
+      </main>
+    </div>
+  )
+}
   if (error) {
-    return (
-      <div className="flex min-h-screen bg-main">
-        <Sidebar />
-        <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 flex items-center justify-center">
-          <div className="text-red-500">{error}</div>
-        </main>
-      </div>
-    )
-  }
+  return (
+    <div className="flex min-h-screen bg-main">
+      <Sidebar />
+      <main
+        dir={isArabic ? 'rtl' : 'ltr'}
+        className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 flex items-center justify-center`}
+      >
+        <div className="text-red-500">{error}</div>
+      </main>
+    </div>
+  )
+}
 
   return (
     <div className="flex min-h-screen bg-main">
       <Sidebar />
 
-      <main className="flex-1 lg:ml-64 p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen">
+      <main
+  dir={isArabic ? 'rtl' : 'ltr'}
+  className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+>
         <motion.div
           initial="hidden"
           animate="visible"
