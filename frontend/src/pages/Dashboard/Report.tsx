@@ -9,8 +9,11 @@ import {
   Calendar,
 } from 'lucide-react'
 import { Sidebar } from '../../components/Sidebar'
+import { useTranslation } from 'react-i18next'
 import { fetchExpenses } from '../../api/expenses'
 import type { Expense } from '../../api/expenses'
+import { fetchCategories } from '../../api/categories'
+import type { Category } from '../../api/categories'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
@@ -26,27 +29,6 @@ import {
   Pie,
   Cell,
 } from 'recharts'
-
-const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#f97316',
-  Transport: '#3b82f6',
-  Shopping: '#ec4899',
-  Bills: '#a855f7',
-  Health: '#10b981',
-  Fun: '#f59e0b',
-}
-
-function getCategoryBg(category: string): string {
-  const map: Record<string, string> = {
-    Food: 'bg-orange-100',
-    Transport: 'bg-blue-100',
-    Shopping: 'bg-pink-100',
-    Bills: 'bg-purple-100',
-    Health: 'bg-emerald-100',
-    Fun: 'bg-amber-100',
-  }
-  return map[category] ?? 'bg-slate-100'
-}
 
 type ReportFilterMode = 'month' | 'date' | 'range'
 
@@ -101,6 +83,9 @@ function getPeriodLabel(
 }
 
 export function Report() {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US'
+
   const now = new Date()
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const defaultDate = now.toISOString().split('T')[0]
@@ -113,6 +98,7 @@ export function Report() {
   const [selectedDate, setSelectedDate] = useState(defaultDate)
   const [dateRange, setDateRange] = useState({ start: firstOfMonth, end: defaultEnd })
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [exportDropdown, setExportDropdown] = useState(false)
   const [exporting, setExporting] = useState<'pdf' | 'excel' | null>(null)
@@ -147,6 +133,20 @@ export function Report() {
   useEffect(() => {
     loadExpenses()
   }, [loadExpenses])
+
+  useEffect(() => {
+    fetchCategories()
+      .then((r) => setCategories(r.categories))
+      .catch(() => setCategories([]))
+  }, [])
+
+  const categoryColorMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    categories.forEach((c) => {
+      if (c.color) map[c.name] = c.color
+    })
+    return map
+  }, [categories])
 
   // ✅ no demo fallback — only real data
   const displayExpenses = expenses
@@ -216,18 +216,7 @@ export function Report() {
         name,
         amount,
         percentage: totalSpent > 0 ? (amount / totalSpent) * 100 : 0,
-        color:
-          name === 'Food'
-            ? 'bg-orange-400'
-            : name === 'Transport'
-              ? 'bg-blue-500'
-              : name === 'Shopping'
-                ? 'bg-pink-500'
-                : name === 'Bills'
-                  ? 'bg-purple-500'
-                  : name === 'Health'
-                    ? 'bg-emerald-500'
-                    : 'bg-slate-400',
+        color: categoryColorMap[name] || '#94A3B8',
       }))
       .sort((a, b) => b.amount - a.amount)
 
@@ -243,7 +232,7 @@ export function Report() {
     const categoryData = categoryList.map((c) => ({
       name: c.name,
       value: c.amount,
-      color: CATEGORY_COLORS[c.name] ?? '#94A3B8',
+      color: categoryColorMap[c.name] || '#94A3B8',
     }))
 
     return { totalSpent, dailyAvg, highestDay, topCategory, categoryList, dailySpending, categoryData }
@@ -260,7 +249,7 @@ export function Report() {
 
       doc.setFontSize(22)
       doc.setFont('helvetica', 'bold')
-      doc.text('Expense Report', margin, 20)
+      doc.text(t('Expense Report'), margin, 20)
       doc.setFontSize(11)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(100, 100, 100)
@@ -269,7 +258,7 @@ export function Report() {
 
       doc.setFontSize(10)
       doc.text(
-        `Generated on ${new Date().toLocaleDateString(undefined, {
+        `${t('Generated on')} ${new Date().toLocaleDateString(locale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
@@ -282,26 +271,26 @@ export function Report() {
 
       doc.setFont('helvetica', 'bold')
       doc.setFontSize(12)
-      doc.text('Summary', margin, y)
+      doc.text(t('Summary'), margin, y)
       y += 8
 
       doc.setFont('helvetica', 'normal')
       doc.setFontSize(10)
-      doc.text(`Total Spent: $${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, margin, y)
+      doc.text(`${t('Total Spent')}: $${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`, margin, y)
       y += 6
-      doc.text(`Daily Average: $${stats.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 2 })}`, margin, y)
+      doc.text(`${t('Daily Average')}: $${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`, margin, y)
       y += 6
       doc.text(
-        `Highest Day: $${stats.highestDay.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}${
-          stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString()})` : ''
+        `${t('Highest Day')}: $${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}${
+          stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString(locale)})` : ''
         }`,
         margin,
         y,
       )
       y += 6
       doc.text(
-        `Top Category: ${stats.topCategory?.name || '-'}${
-          stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })})` : ''
+        `${t('Top Category')}: ${stats.topCategory ? t(stats.topCategory.name) : '-'}${
+          stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(locale, { minimumFractionDigits: 2 })})` : ''
         }`,
         margin,
         y,
@@ -311,13 +300,13 @@ export function Report() {
       if (filteredTransactions.length > 0) {
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(12)
-        doc.text('Transactions', margin, y)
+        doc.text(t('Transactions'), margin, y)
         y += 5
 
         autoTable(doc, {
           startY: y,
-          head: [['Date', 'Title', 'Category', 'Amount ($)', 'Note']],
-          body: filteredTransactions.map((tx) => [tx.date, tx.title, tx.category, tx.amount.toFixed(2), tx.note || '']),
+          head: [[t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')]],
+          body: filteredTransactions.map((tx) => [new Date(tx.date).toLocaleDateString(locale), tx.title, t(tx.category), tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 }), tx.note || '']),
           theme: 'striped',
           headStyles: { fillColor: [16, 185, 129], textColor: 255 },
           margin: { left: margin, right: margin },
@@ -334,13 +323,13 @@ export function Report() {
         }
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(12)
-        doc.text('Category Breakdown', margin, y)
+        doc.text(t('Category Breakdown'), margin, y)
         y += 5
 
         autoTable(doc, {
           startY: y,
-          head: [['Category', 'Amount ($)', 'Percentage']],
-          body: stats.categoryList.map((cat) => [cat.name, cat.amount.toFixed(2), `${cat.percentage.toFixed(1)}%`]),
+          head: [[t('Category'), t('Amount'), t('Percentage')]],
+          body: stats.categoryList.map((cat) => [t(cat.name), cat.amount.toLocaleString(locale, { minimumFractionDigits: 2 }), `${cat.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}%`]),
           theme: 'striped',
           headStyles: { fillColor: [16, 185, 129], textColor: 255 },
           margin: { left: margin, right: margin },
@@ -363,32 +352,32 @@ export function Report() {
       const wb = XLSX.utils.book_new()
 
       const summaryData = [
-        ['Expense Report'],
-        ['Period', periodLabel],
-        ['Generated', new Date().toLocaleDateString()],
+        [t('Expense Report')],
+        [t('Period'), periodLabel],
+        [t('Generated on'), new Date().toLocaleDateString(locale)],
         [],
-        ['Summary'],
-        ['Total Spent', `$${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
-        ['Daily Average', `$${stats.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 2 })}`],
-        ['Highest Day', `$${stats.highestDay.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`],
-        ['Highest Day Date', stats.highestDay.date || '-'],
-        ['Top Category', stats.topCategory?.name || '-'],
-        ['Top Category Amount', stats.topCategory ? `$${stats.topCategory.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '-'],
+        [t('Summary')],
+        [t('Total Spent'), `$${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`],
+        [t('Daily Average'), `$${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`],
+        [t('Highest Day'), `$${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}`],
+        [t('Highest Day'), stats.highestDay.date ? new Date(stats.highestDay.date).toLocaleDateString(locale) : '-'],
+        [t('Top Category'), stats.topCategory ? t(stats.topCategory.name) : '-'],
+        [t('Top Category'), stats.topCategory ? `$${stats.topCategory.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}` : '-'],
       ]
       XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary')
 
       const txData = [
-        ['Date', 'Title', 'Category', 'Amount', 'Note'],
-        ...filteredTransactions.map((tx) => [tx.date, tx.title, tx.category, tx.amount, tx.note || '']),
+        [t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')],
+        ...filteredTransactions.map((tx) => [new Date(tx.date).toLocaleDateString(locale), tx.title, t(tx.category), tx.amount, tx.note || '']),
       ]
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(txData), 'Transactions')
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(txData), t('Transactions'))
 
       if (stats.categoryList.length > 0) {
         const catData = [
-          ['Category', 'Amount', 'Percentage'],
-          ...stats.categoryList.map((cat) => [cat.name, cat.amount, `${cat.percentage.toFixed(1)}%`]),
+          [t('Category'), t('Amount'), t('Percentage')],
+          ...stats.categoryList.map((cat) => [t(cat.name), cat.amount, `${cat.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}%`]),
         ]
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catData), 'Categories')
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catData), t('Categories'))
       }
 
       XLSX.writeFile(wb, `expense-report-${start}-to-${end}.xlsx`)
@@ -409,7 +398,7 @@ export function Report() {
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-emerald-50/30">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-emerald-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-emerald-900/10">
       <Sidebar />
 
       {/* ✅ responsive left spacing so layout doesn't break */}
@@ -420,9 +409,9 @@ export function Report() {
             <div className="flex justify-between items-center">
               <div>
                 <div className="flex items-center ">
-                  <h1 className="text-2xl sm:text-3xl font-bold font-heading">Expense Report</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 dark:text-white">{t('Expense Report')}</h1>
                 </div>
-                <p className="text-slate-600 mt-1 font-medium">Detailed analysis of your spending habits</p>
+                <p className="text-slate-600 dark:text-slate-400 mt-1 font-medium">{t('Detailed analysis of your spending habits')}</p>
               </div>
 
               <div className="relative mt-10 lg:mt-0">
@@ -432,27 +421,27 @@ export function Report() {
                   className="flex items-center gap-2 px-5 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-200 disabled:opacity-50"
                 >
                   <Download className="w-5 h-5" />
-                  {exporting ? (exporting === 'pdf' ? 'Exporting PDF...' : 'Exporting Excel...') : 'Export'}
+                  {exporting ? (exporting === 'pdf' ? t('Exporting PDF...') : t('Exporting Excel...')) : t('Export')}
                   <ChevronDown className="w-4 h-4" />
                 </button>
 
                 {exportDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setExportDropdown(false)} />
-                    <div className="absolute right-0 mt-1 py-1 bg-white rounded-xl shadow-lg border border-slate-200 z-20 min-w-[180px]">
+                    <div className="absolute right-0 mt-1 py-1 bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 z-20 min-w-[180px]">
                       <button
                         onClick={handleExportPDF}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
                         <FileText className="w-4 h-4 text-red-500" />
-                        Export as PDF
+                        {t('Export as PDF')}
                       </button>
                       <button
                         onClick={handleExportExcel}
-                        className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="w-full flex items-center gap-2 px-4 py-2.5 text-left text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                       >
                         <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-                        Export as Excel
+                        {t('Export as Excel')}
                       </button>
                     </div>
                   </>
@@ -461,42 +450,42 @@ export function Report() {
             </div>
 
             {/* Filter Controls */}
-            <div className="bg-white p-5 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200 flex flex-wrap gap-4 items-center">
-              <div className="flex gap-2 bg-slate-100 p-1 rounded-lg">
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl p-5 rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-700/50 flex flex-wrap gap-4 items-center">
+              <div className="flex gap-2 bg-slate-100 dark:bg-slate-900/50 p-1 rounded-lg">
                 <button
                   onClick={() => setFilterMode('month')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    filterMode === 'month' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    filterMode === 'month' ? 'bg-white dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-sm dark:shadow-none' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  Month
+                  {t('Month')}
                 </button>
                 <button
                   onClick={() => setFilterMode('date')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    filterMode === 'date' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    filterMode === 'date' ? 'bg-white dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-sm dark:shadow-none' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  Specific Date
+                  {t('Specific Date')}
                 </button>
                 <button
                   onClick={() => setFilterMode('range')}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                    filterMode === 'range' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    filterMode === 'range' ? 'bg-white dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 shadow-sm dark:shadow-none' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                   }`}
                 >
-                  Date Range
+                  {t('Date Range')}
                 </button>
               </div>
 
-              <div className="h-8 w-px bg-slate-200" />
+              <div className="h-8 w-px bg-slate-200 dark:bg-slate-700" />
 
               {filterMode === 'month' && (
                 <input
                   type="month"
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                 />
               )}
 
@@ -505,7 +494,7 @@ export function Report() {
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                  className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                 />
               )}
 
@@ -515,14 +504,14 @@ export function Report() {
                     type="date"
                     value={dateRange.start}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, start: e.target.value }))}
-                    className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                   />
-                  <span className="text-slate-400">to</span>
+                  <span className="text-slate-400">{t('to')}</span>
                   <input
                     type="date"
                     value={dateRange.end}
                     onChange={(e) => setDateRange((prev) => ({ ...prev, end: e.target.value }))}
-                    className="px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                   />
                 </div>
               )}
@@ -530,7 +519,7 @@ export function Report() {
           </motion.header>
 
           {loading ? (
-            <div className="text-center py-16 text-slate-600 font-medium">Loading report...</div>
+            <div className="text-center py-16 text-slate-600 dark:text-slate-400 font-medium">{t('Loading report...')}</div>
           ) : (
             // ✅ Key part: loaded content has its own motion container, so it animates correctly on mount
             <motion.div
@@ -544,32 +533,32 @@ export function Report() {
               <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
                   {
-                    label: 'Total Spent',
-                    value: `$${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-                    color: 'text-slate-900',
+                    label: t('Total Spent'),
+                    value: `$${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`,
+                    color: 'text-slate-900 dark:text-white',
                   },
                   {
-                    label: 'Daily Average',
-                    value: `$${stats.dailyAvg.toLocaleString(undefined, { maximumFractionDigits: 2 })}`,
-                    color: 'text-slate-900',
+                    label: t('Daily Average'),
+                    value: `$${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`,
+                    color: 'text-slate-900 dark:text-white',
                   },
                   {
-                    label: 'Highest Day',
-                    value: `$${stats.highestDay.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+                    label: t('Highest Day'),
+                    value: `$${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}`,
                     sub: stats.highestDay.date
-                      ? new Date(stats.highestDay.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                      ? new Date(stats.highestDay.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
                       : '-',
                     color: 'text-red-500',
                   },
                   {
-                    label: 'Top Category',
-                    value: stats.topCategory?.name || '-',
+                    label: t('Top Category'),
+                    value: stats.topCategory ? t(stats.topCategory.name) : '-',
                     sub: stats.topCategory ? `${Math.round((stats.topCategory.amount / stats.totalSpent) * 100)}%` : '-',
                     color: 'text-emerald-600',
                   },
                 ].map((stat, i) => (
-                  <div key={i} className="bg-white p-6 rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/80">
-                    <p className="text-slate-500 text-sm font-medium mb-2">{stat.label}</p>
+                  <div key={i} className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl p-6 rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50">
+                    <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">{stat.label}</p>
                     <div className="flex items-baseline gap-2">
                       <h3 className={`text-2xl font-bold font-heading ${stat.color}`}>{stat.value}</h3>
                       {stat.sub && <span className="text-sm text-slate-400 font-medium">{stat.sub}</span>}
@@ -582,9 +571,9 @@ export function Report() {
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <motion.div
                   variants={itemVariants}
-                  className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/80"
+                  className="lg:col-span-2 bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50"
                 >
-                  <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">Spending Over Time</h3>
+                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-6">{t('Spending Over Time')}</h3>
                   <div className="h-[260px] w-full">
                     {stats.dailySpending.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -602,7 +591,7 @@ export function Report() {
                             tickLine={false}
                             tick={{ fill: '#94A3B8', fontSize: 11 }}
                             tickFormatter={(v) =>
-                              new Date(v).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+                              new Date(v).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
                             }
                           />
                           <YAxis
@@ -618,21 +607,21 @@ export function Report() {
                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                             }}
                             labelFormatter={(v) =>
-                              new Date(v).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+                              new Date(v).toLocaleDateString(locale, { weekday: 'short', month: 'short', day: 'numeric' })
                             }
-                            formatter={(v) => [`$${Number(v).toFixed(2)}`, 'Spent']}
+                            formatter={(v: number | undefined) => [`$${(v ?? 0).toLocaleString(locale, { minimumFractionDigits: 2 })}`, t('Spent')]}
                           />
                           <Area type="monotone" dataKey="amount" stroke="#059669" strokeWidth={2} fillOpacity={1} fill="url(#reportColorAmount)" />
                         </AreaChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">No spending data for this period</div>
+                      <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">{t('No spending data for this period')}</div>
                     )}
                   </div>
                 </motion.div>
 
-                <motion.div variants={itemVariants} className="bg-white rounded-2xl p-6 shadow-lg shadow-slate-200/50 border border-slate-200/80">
-                  <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">By Category</h3>
+                <motion.div variants={itemVariants} className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50">
+                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-2">{t('By Category')}</h3>
                   <div className="h-[220px] w-full relative">
                     {stats.categoryData.length > 0 ? (
                       <ResponsiveContainer width="100%" height="100%">
@@ -657,12 +646,12 @@ export function Report() {
                               border: 'none',
                               boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                             }}
-                            formatter={(v) => [`$${Number(v).toFixed(2)}`, '']}
+                            formatter={(v: number | undefined) => [`$${(v ?? 0).toLocaleString(locale, { minimumFractionDigits: 2 })}`, '']}
                           />
                         </PieChart>
                       </ResponsiveContainer>
                     ) : (
-                      <div className="h-full flex items-center justify-center text-slate-400 text-sm">No categories</div>
+                      <div className="h-full flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">{t('No categories')}</div>
                     )}
                   </div>
 
@@ -670,9 +659,9 @@ export function Report() {
                     {stats.categoryData.slice(0, 5).map((item) => (
                       <div key={item.name} className="flex items-center gap-2 text-xs">
                         <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
-                        <span className="text-slate-600 truncate">{item.name}</span>
+                        <span className="text-slate-600 dark:text-slate-300 truncate">{t(item.name)}</span>
                         <span className="text-slate-400 ml-auto">
-                          {stats.totalSpent > 0 ? Math.round((item.value / stats.totalSpent) * 100) : 0}%
+                          {stats.totalSpent > 0 ? Math.round((item.value / stats.totalSpent) * 100).toLocaleString(locale) : 0}%
                         </span>
                       </div>
                     ))}
@@ -681,31 +670,32 @@ export function Report() {
               </div>
 
               {/* Category Breakdown Bars */}
-              <motion.div variants={itemVariants} className="bg-white rounded-2xl p-8 shadow-lg shadow-slate-200/50 border border-slate-200/80">
-                <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">Category Breakdown</h3>
+              <motion.div variants={itemVariants} className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-8 shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50">
+                <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-6">{t('Category Breakdown')}</h3>
                 <div className="space-y-6">
                   {stats.categoryList.length > 0 ? (
                     stats.categoryList.map((cat) => (
                       <div key={cat.name}>
                         <div className="flex justify-between text-sm font-medium mb-2">
-                          <span className="text-slate-700">{cat.name}</span>
-                          <span className="text-slate-900">
-                            ${cat.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          <span className="text-slate-700 dark:text-slate-300">{t(cat.name)}</span>
+                          <span className="text-slate-900 dark:text-white">
+                            ${cat.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
                           </span>
                         </div>
-                        <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-3 w-full bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
                             whileInView={{ width: `${cat.percentage}%` }}
                             viewport={{ once: true, amount: 0.2 }}
                             transition={{ duration: 1, ease: 'easeOut' }}
-                            className={`h-full rounded-full ${cat.color}`}
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: cat.color }}
                           />
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 text-slate-500">No expenses found for this period.</div>
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">{t('No expenses found for this period.')}</div>
                   )}
                 </div>
               </motion.div>
@@ -713,16 +703,16 @@ export function Report() {
               {/* Filters + Transactions List */}
               <motion.div variants={itemVariants} className="space-y-4">
                 <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
-                  <h3 className="text-lg font-bold font-heading text-slate-900">Transactions</h3>
+                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">{t('Transactions')}</h3>
                   <div className="flex flex-wrap gap-2 items-center">
                     <div className="relative flex-1 sm:flex-initial sm:w-56">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                       <input
                         type="text"
-                        placeholder="Search transactions..."
+                        placeholder={t('Search transactions...')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2.5 bg-white border-2 border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 outline-none transition-colors"
+                        className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 dark:focus:border-emerald-500 outline-none transition-colors text-slate-900 dark:text-white dark:placeholder-slate-500"
                       />
                     </div>
 
@@ -733,44 +723,52 @@ export function Report() {
                           onClick={() => setSelectedCategory(cat)}
                           className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                             selectedCategory === cat
-                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-                              : 'bg-white border-2 border-slate-200 text-slate-600 hover:border-emerald-300 hover:bg-emerald-50/50'
+                              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none'
+                              : 'bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-300 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-slate-700'
                           }`}
                         >
-                          {cat}
+                          {t(cat)}
                         </button>
                       ))}
                     </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-200/80 overflow-hidden">
-                  <div className="divide-y divide-slate-200 max-h-[400px] overflow-y-auto">
+                <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50 overflow-hidden">
+                  <div className="divide-y divide-slate-200 dark:divide-slate-700/50 max-h-[400px] overflow-y-auto">
                     {filteredTransactions.map((tx) => (
-                      <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-emerald-50/50 transition-colors">
-                        <div className={`w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${getCategoryBg(tx.category)}`}>
+                      <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-emerald-50/50 dark:hover:bg-slate-700/50 transition-colors">
+                        <div
+                          className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                          style={{
+                            backgroundColor: categoryColorMap[tx.category]
+                              ? `${categoryColorMap[tx.category]}33`
+                              : undefined,
+                            color: categoryColorMap[tx.category] || undefined,
+                          }}
+                        >
                           {tx.emoji}
                         </div>
 
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-slate-900 truncate">{tx.title}</h4>
-                          <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-500">
+                          <h4 className="font-semibold text-slate-900 dark:text-white truncate">{tx.title}</h4>
+                          <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-500 dark:text-slate-400">
                             <Calendar className="w-3.5 h-3.5" />
-                            {tx.date}
-                            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs">{tx.category}</span>
+                            {new Date(tx.date).toLocaleDateString(locale)}
+                            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs">{t(tx.category)}</span>
                           </div>
                         </div>
 
                         <div className="text-right flex-shrink-0">
-                          <span className="font-bold text-slate-900">-${tx.amount.toFixed(2)}</span>
+                          <span className="font-bold text-slate-900 dark:text-white">-${tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}</span>
                         </div>
                       </div>
                     ))}
                   </div>
 
                   {filteredTransactions.length === 0 && (
-                    <div className="text-center py-12 text-slate-500">
-                      {displayExpenses.length === 0 ? 'No expenses found for this period.' : 'No transactions match your filters.'}
+                    <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                      {displayExpenses.length === 0 ? t('No expenses found for this period.') : t('No transactions match your filters.')}
                     </div>
                   )}
                 </div>

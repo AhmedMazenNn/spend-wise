@@ -14,6 +14,7 @@ import {
   Cell,
 } from 'recharts'
 import { Plus, X, Wallet, Trash2 } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 import Sidebar from '../../components/Sidebar'
 import { AddExpenseModal } from '../../components/AddExpenseModal'
@@ -23,14 +24,16 @@ import { setBudget, removeBudget } from '../../api/budgets'
 
 type FilterMode = 'preset' | 'custom'
 
-const getGreeting = () => {
+const getGreeting = (t: any) => {
   const h = new Date().getHours()
-  if (h < 12) return 'Good morning'
-  if (h < 17) return 'Good afternoon'
-  return 'Good evening'
+  if (h < 12) return t('Good morning')
+  if (h < 17) return t('Good afternoon')
+  return t('Good evening')
 }
 
 function Home() {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US'
   const user = getStoredUser()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const now = new Date()
@@ -92,15 +95,15 @@ function Home() {
   const getPeriodLabel = () => {
     if (filterMode === 'custom') {
       if (customRange.start === customRange.end) {
-        return `Viewing: ${new Date(customRange.start).toLocaleDateString('en-US', {
+        return `Viewing: ${new Date(customRange.start).toLocaleDateString(locale, {
           month: 'short',
           day: 'numeric',
         })}`
       }
-      return `${new Date(customRange.start).toLocaleDateString('en-US', {
+      return `${new Date(customRange.start).toLocaleDateString(locale, {
         month: 'short',
         day: 'numeric',
-      })} – ${new Date(customRange.end).toLocaleDateString('en-US', {
+      })} – ${new Date(customRange.end).toLocaleDateString(locale, {
         month: 'short',
         day: 'numeric',
       })}`
@@ -175,11 +178,11 @@ function Home() {
             className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-end"
           >
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 break-words">
-                {getGreeting()}, {user?.name?.split(' ')[0] || 'User'} 👋
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 dark:text-white break-words">
+                {getGreeting(t)}, {user?.name?.split(' ')[0] || t('Guest')} 👋
               </h1>
-              <p className="text-slate-500 mt-1 text-sm sm:text-base">
-                {new Date().toLocaleDateString('en-US', {
+              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">
+                {new Date().toLocaleDateString(locale, {
                   weekday: 'long',
                   year: 'numeric',
                   month: 'long',
@@ -199,17 +202,17 @@ function Home() {
                 }
                 setIsBudgetModalOpen(true)
               }}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 font-medium rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
             >
               <Wallet className="w-4 h-4 text-emerald-600" />
-              {budget ? 'Edit Budget' : 'Set Budget'}
+              {budget ? t('Set Budget') : t('Set Budget')}
             </button>
           </motion.header>
 
           {/* Date Filter */}
           <motion.div variants={itemVariants} className="space-y-4">
             <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:gap-2 lg:items-center">
-              <div className="w-full lg:w-auto flex gap-2 bg-slate-100 p-1 rounded-full overflow-x-auto no-scrollbar">
+              <div className="w-full lg:w-auto flex gap-2 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-full overflow-x-auto no-scrollbar">
                 {(['Today', 'Week', 'Month', 'All'] as TimePeriod[]).map((period) => (
                   <button
                     key={period}
@@ -220,10 +223,10 @@ function Home() {
                     className={`shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                       filterMode === 'preset' && selectedPeriod === period
                         ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {period}
+                    {t(period)}
                   </button>
                 ))}
               </div>
@@ -238,22 +241,22 @@ function Home() {
                     type="month"
                     value={selectedMonth}
                     onChange={(e) => setSelectedMonth(e.target.value)}
-                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                   />
                 </motion.div>
               )}
 
-              <div className="hidden lg:block w-px h-8 bg-slate-200 mx-2" />
+              <div className="hidden lg:block w-px h-8 bg-slate-200 dark:bg-slate-700 mx-2" />
 
               <button
                 onClick={() => setFilterMode('custom')}
                 className={`w-full sm:w-auto px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                   filterMode === 'custom'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                 }`}
               >
-                Custom Range
+                {t('Custom Range')}
               </button>
 
               {filterMode === 'custom' && (
@@ -268,7 +271,7 @@ function Home() {
                     onChange={(e) =>
                       setCustomRange((prev) => ({ ...prev, start: e.target.value }))
                     }
-                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                   />
                   <span className="text-slate-400 text-sm hidden sm:inline">to</span>
                   <input
@@ -277,7 +280,7 @@ function Home() {
                     onChange={(e) =>
                       setCustomRange((prev) => ({ ...prev, end: e.target.value }))
                     }
-                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700"
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200"
                   />
                 </motion.div>
               )}
@@ -298,7 +301,7 @@ function Home() {
                   <div className="relative z-10">
                     <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-start mb-4">
                       <div>
-                        <h3 className="text-lg font-bold font-heading">Active Budget</h3>
+                        <h3 className="text-lg font-bold font-heading">{t('Active Budget')}</h3>
                         <p className="text-slate-400 text-sm mt-1">
                           {new Date(budget.startDate).toLocaleDateString()} –{' '}
                           {new Date(budget.endDate).toLocaleDateString()}
@@ -312,7 +315,7 @@ function Home() {
                               : 'bg-emerald-500/20 border-emerald-500/50 text-emerald-200'
                           }`}
                         >
-                          {budgetStats.isOver ? 'Over Budget' : 'On Track'}
+                          {budgetStats.isOver ? t('over') : t('remaining')}
                         </div>
                         {budget.id && (
                           <button
@@ -329,12 +332,12 @@ function Home() {
                     <div className="flex flex-wrap items-end gap-2 mb-2">
                       <span className="text-2xl sm:text-3xl font-bold font-heading">
                         $
-                        {budgetStats.spentInBudget.toLocaleString(undefined, {
+                        {budgetStats.spentInBudget.toLocaleString(locale, {
                           minimumFractionDigits: 2,
                         })}
                       </span>
                       <span className="text-slate-400 mb-1">
-                        / ${budget.amount.toLocaleString()}
+                        / ${budget.amount.toLocaleString(locale)}
                       </span>
                     </div>
 
@@ -350,11 +353,11 @@ function Home() {
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 text-xs text-slate-400">
-                      <span>{budgetStats.percentage.toFixed(1)}% used</span>
+                      <span>{budgetStats.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}% {t('Spent')}</span>
                       <span>
                         {budgetStats.isOver
-                          ? `$${Math.abs(budgetStats.remaining).toLocaleString()} over`
-                          : `$${budgetStats.remaining.toLocaleString()} remaining`}
+                          ? `$${Math.abs(budgetStats.remaining).toLocaleString(locale)} ${t('over')}`
+                          : `$${budgetStats.remaining.toLocaleString(locale)} ${t('remaining')}`}
                       </span>
                     </div>
                   </div>
@@ -367,22 +370,22 @@ function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <motion.div variants={itemVariants} className="relative group">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-2xl opacity-75 group-hover:opacity-100 transition duration-200 blur-[1px]" />
-              <div className="relative h-full bg-white rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
+              <div className="relative h-full bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 rounded-2xl p-6 sm:p-8 flex flex-col justify-between shadow-sm">
                 <div>
-                  <p className="text-slate-500 font-medium text-sm uppercase tracking-wider">
-                    Spent: {getPeriodLabel()}
+                  <p className="text-slate-500 dark:text-slate-400 font-medium text-sm uppercase tracking-wider">
+                    {t('Spent')}: {getPeriodLabel()}
                   </p>
-                  <h2 className="text-4xl sm:text-5xl font-bold font-heading text-slate-900 mt-4 break-words">
+                  <h2 className="text-4xl sm:text-5xl font-bold font-heading text-slate-900 dark:text-white mt-4 break-words">
                     $
-                    {stats.totalSpent.toLocaleString('en-US', {
+                    {stats.totalSpent.toLocaleString(locale, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </h2>
                 </div>
                 <div className="mt-6 flex items-center gap-2">
-                  <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
-                    {stats.count} Transactions
+                  <span className="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100 dark:border-emerald-500/30">
+                    {stats.count.toLocaleString(locale)} {t('Transactions')}
                   </span>
                 </div>
               </div>
@@ -390,36 +393,36 @@ function Home() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl p-6 sm:p-8 shadow-card flex flex-col justify-between"
+              className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 rounded-2xl p-6 sm:p-8 shadow-card flex flex-col justify-between"
             >
-              <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
-                Quick Stats
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-6">
+                {t('Overview of your finances')}
               </h3>
               <div className="space-y-6">
                 <div className="flex justify-between items-center gap-4">
-                  <span className="text-slate-500 font-medium">Daily Average</span>
-                  <span className="text-xl font-bold text-slate-900">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">{t('Avg. Transaction')}</span>
+                  <span className="text-xl font-bold text-slate-900 dark:text-white">
                     $
-                    {stats.dailyAvg.toLocaleString(undefined, {
+                    {stats.dailyAvg.toLocaleString(locale, {
                       maximumFractionDigits: 0,
                     })}
                   </span>
                 </div>
-                <div className="h-px bg-slate-100" />
+                <div className="h-px bg-slate-100 dark:bg-slate-700" />
                 <div className="flex justify-between items-center gap-4">
-                  <span className="text-slate-500 font-medium">Highest Expense</span>
-                  <span className="text-xl font-bold text-slate-900">
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">{t('Highest Expense')}</span>
+                  <span className="text-xl font-bold text-slate-900 dark:text-white">
                     $
-                    {stats.highest.toLocaleString(undefined, {
+                    {stats.highest.toLocaleString(locale, {
                       minimumFractionDigits: 2,
                     })}
                   </span>
                 </div>
-                <div className="h-px bg-slate-100" />
+                <div className="h-px bg-slate-100 dark:bg-slate-700" />
                 <div className="flex justify-between items-center gap-4">
-                  <span className="text-slate-500 font-medium">Top Category</span>
+                  <span className="text-slate-500 dark:text-slate-400 font-medium">{t('Top Category')}</span>
                   <span className="text-xl font-bold text-emerald-600 truncate max-w-[10rem] sm:max-w-none">
-                    {stats.topCategory || 'N/A'}
+                    {stats.topCategory ? t(stats.topCategory) : 'N/A'}
                   </span>
                 </div>
               </div>
@@ -430,10 +433,10 @@ function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <motion.div
               variants={itemVariants}
-              className="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 shadow-card"
+              className="lg:col-span-2 bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-card"
             >
-              <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
-                Spending Over Time
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-6">
+                {t('Spending Over Time')}
               </h3>
               <div className="h-[260px] sm:h-[300px] w-full min-w-0" style={{ minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -444,7 +447,7 @@ function Home() {
                         <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="opacity-50 dark:opacity-20" />
                     <XAxis
                       dataKey="date"
                       axisLine={false}
@@ -466,7 +469,7 @@ function Home() {
                         boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
                       }}
                       itemStyle={{ color: '#059669', fontWeight: 600 }}
-                      formatter={(v) => [`$${v ?? 0}`, 'Spent']}
+                      formatter={(v) => [`$${v ?? 0}`, t('Spent')]}
                     />
                     <Area
                       type="monotone"
@@ -483,10 +486,10 @@ function Home() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl p-5 sm:p-6 shadow-card"
+              className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-card"
             >
-              <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">
-                Category Breakdown
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-2">
+                {t('Category Breakdown')}
               </h3>
               <div className="h-[240px] sm:h-[250px] w-full relative min-w-0" style={{ minWidth: 0 }}>
                 <ResponsiveContainer width="100%" height="100%">
@@ -517,13 +520,13 @@ function Home() {
 
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
-                    <span className="block text-2xl font-bold font-heading text-slate-900">
+                    <span className="block text-2xl font-bold font-heading text-slate-900 dark:text-white">
                       $
-                      {stats.totalSpent.toLocaleString(undefined, {
+                      {stats.totalSpent.toLocaleString(locale, {
                         maximumFractionDigits: 0,
                       })}
                     </span>
-                    <span className="text-xs text-slate-400">Total</span>
+                    <span className="text-xs text-slate-400">{t('Total')}</span>
                   </div>
                 </div>
               </div>
@@ -535,10 +538,10 @@ function Home() {
                       className="w-2.5 h-2.5 rounded-full shrink-0"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-slate-600 truncate">{item.name}</span>
-                    <span className="text-slate-400 ml-auto shrink-0">
+                    <span className="text-slate-600 dark:text-slate-300 truncate">{item.name}</span>
+                    <span className="text-slate-400 dark:text-slate-500 ml-auto shrink-0">
                       {stats.totalSpent > 0
-                        ? Math.round((item.value / stats.totalSpent) * 100)
+                        ? Math.round((item.value / stats.totalSpent) * 100).toLocaleString(locale)
                         : 0}
                       %
                     </span>
@@ -551,14 +554,14 @@ function Home() {
           {/* Recent Expenses */}
           <motion.div variants={itemVariants}>
             <div className="flex items-center justify-between gap-3 mb-4">
-              <h3 className="text-lg font-bold font-heading text-slate-900">
-                Recent Expenses
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">
+                {t('Recent Expenses')}
               </h3>
               <Link
                 to="/transactions"
                 className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline shrink-0"
               >
-                View All
+                {t('View All')}
               </Link>
             </div>
 
@@ -570,49 +573,49 @@ function Home() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                   className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-0 p-4 rounded-xl ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'
-                  } hover:bg-slate-50 transition-colors`}
+                    index % 2 === 0 ? 'bg-white dark:bg-slate-800/80' : 'bg-slate-50/50 dark:bg-slate-800/40'
+                  } hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors dark:border dark:border-slate-700/30`}
                 >
                   <div className="flex items-center min-w-0">
                     <div
                       className={`w-12 h-12 rounded-full flex items-center justify-center text-xl mr-4 shrink-0 ${
                         tx.category === 'Food'
-                          ? 'bg-orange-100'
+                          ? 'bg-orange-100 dark:bg-orange-900/40'
                           : tx.category === 'Transport'
-                            ? 'bg-blue-100'
+                            ? 'bg-blue-100 dark:bg-blue-900/40'
                             : tx.category === 'Shopping'
-                              ? 'bg-pink-100'
+                              ? 'bg-pink-100 dark:bg-pink-900/40'
                               : tx.category === 'Bills'
-                                ? 'bg-purple-100'
+                                ? 'bg-purple-100 dark:bg-purple-900/40'
                                 : tx.category === 'Health'
-                                  ? 'bg-emerald-100'
+                                  ? 'bg-emerald-100 dark:bg-emerald-900/40'
                                   : tx.category === 'Fun'
-                                    ? 'bg-amber-100'
-                                    : 'bg-slate-100'
+                                    ? 'bg-amber-100 dark:bg-amber-900/40'
+                                    : 'bg-slate-100 dark:bg-slate-700'
                       }`}
                     >
                       {tx.emoji}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold font-heading text-slate-900 truncate">
+                      <h4 className="font-bold font-heading text-slate-900 dark:text-white truncate">
                         {tx.title}
                       </h4>
-                      <p className="text-sm text-slate-400 truncate">
-                        {tx.date} • {tx.category}
+                      <p className="text-sm text-slate-400 dark:text-slate-500 truncate">
+                        {tx.date} • {t(tx.category)}
                       </p>
                     </div>
                   </div>
 
-                  <div className="font-bold font-heading text-slate-900 sm:ml-4 sm:text-right">
-                    -${tx.amount.toFixed(2)}
+                  <div className="font-bold font-heading text-slate-900 dark:text-white sm:ml-4 sm:text-right">
+                    -${tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
                   </div>
                 </motion.div>
               ))}
 
               {transactions.length === 0 && (
                 <div className="text-center py-8 text-slate-500">
-                  No expenses found for this period.
+                  {t('No expenses found for this period.')}
                 </div>
               )}
             </div>
@@ -654,17 +657,17 @@ function Home() {
               className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
             >
               <div
-                className="bg-white w-full max-w-md rounded-2xl shadow-2xl pointer-events-auto overflow-hidden mx-4"
+                className="bg-white dark:bg-slate-800 w-full max-w-md rounded-2xl shadow-2xl pointer-events-auto overflow-hidden mx-4 dark:border dark:border-slate-700/50"
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold font-heading text-slate-900">
-                      Set Budget
+                    <h2 className="text-xl font-bold font-heading text-slate-900 dark:text-white">
+                      {t('Set Budget')}
                     </h2>
                     <button
                       onClick={() => setIsBudgetModalOpen(false)}
-                      className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-full transition-colors"
                     >
                       <X className="w-5 h-5 text-slate-400" />
                     </button>
@@ -672,8 +675,8 @@ function Home() {
 
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-slate-600 mb-1">
-                        Budget Amount
+                      <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                        {t('Budget Amount')}
                       </label>
                       <div className="relative">
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
@@ -688,15 +691,15 @@ function Home() {
                               amount: Number(e.target.value),
                             }))
                           }
-                          className="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full pl-8 pr-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 dark:text-white"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">
-                          Start Date
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                          {t('Start Date')}
                         </label>
                         <input
                           type="date"
@@ -707,12 +710,12 @@ function Home() {
                               startDate: e.target.value,
                             }))
                           }
-                          className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 dark:text-white"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-slate-600 mb-1">
-                          End Date
+                        <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                          {t('End Date')}
                         </label>
                         <input
                           type="date"
@@ -723,7 +726,7 @@ function Home() {
                               endDate: e.target.value,
                             }))
                           }
-                          className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 outline-none"
+                          className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none text-slate-900 dark:text-white"
                         />
                       </div>
                     </div>
@@ -733,7 +736,7 @@ function Home() {
                       disabled={budgetSaving}
                       className="w-full py-3 bg-emerald-600 text-white rounded-xl font-semibold shadow-lg shadow-emerald-200 hover:bg-emerald-700 transition-colors mt-4 disabled:opacity-50"
                     >
-                      {budgetSaving ? 'Saving...' : 'Save Budget'}
+                      {budgetSaving ? t('Saving...') : t('Save Budget')}
                     </button>
                   </div>
                 </div>

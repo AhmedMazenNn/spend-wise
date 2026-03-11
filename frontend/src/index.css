@@ -2,10 +2,17 @@
 
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   body {
     font-family: "Inter", system-ui, sans-serif;
-    @apply text-slate-800 antialiased;
+    @apply text-slate-800 bg-white transition-colors duration-200 antialiased;
+  }
+
+  /* Dark mode global overrides */
+  html.dark body {
+    @apply text-slate-200 bg-slate-900;
   }
 
   h1,
@@ -37,6 +44,15 @@
   }
 
   .bg-main {
-    background-color: #f1f5f9;
+    @apply bg-slate-100 dark:bg-slate-900;
   }
+}
+
+/* Bi-directional Text Support */
+html[dir="rtl"] {
+  text-align: right;
+}
+html[dir="rtl"] .sidebar-drawer {
+  right: 0;
+  left: auto;
 }

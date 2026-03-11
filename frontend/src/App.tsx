@@ -14,9 +14,12 @@ import { Admin } from './pages/Dashboard/Admin'
 import { RequireAdmin } from './components/RequireAdmin'
 import { NotFound } from './pages/NotFound'
 import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
+import './i18n'
 
 const App = () => {
   return (
+    <ThemeProvider>
     <AuthProvider>
       <Router>
         <Routes>
@@ -36,6 +39,7 @@ const App = () => {
         </Routes>
       </Router>
     </AuthProvider>
+    </ThemeProvider>
   )
 }
 
