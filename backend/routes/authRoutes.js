@@ -1,7 +1,10 @@
+// backend/routes/authRoutes.js
 const router = require("express").Router();
 const {
   signup,
   login,
+  verifyEmail,
+  resendVerification,
   refresh,
   logout,
   profile,
@@ -24,9 +27,11 @@ const auth = require("../middlewares/auth");
  * @swagger
  * /api/auth/signup:
  *   post:
- *     summary: Register a new user
- *     tags:
- *       - Auth
+ *     summary: Register a new user (email/password)
+ *     tags: [Auth]
+ *     description: |
+ *       Creates the account in an unverified state and sends a verification email.
+ *       No tokens are returned — the user must click the verification link before they can log in.
  *     requestBody:
  *       required: true
  *       content:
@@ -43,29 +48,38 @@ const auth = require("../middlewares/auth");
  *                 example: ahmed@test.com
  *               password:
  *                 type: string
- *                 example: 12345678
+ *                 example: MyPass1!
  *               confirmPassword:
  *                 type: string
- *                 example: 12345678
+ *                 example: MyPass1!
  *               phone:
  *                 type: string
  *                 example: "+201234567890"
  *     responses:
  *       201:
- *         description: User created successfully
+ *         description: Account created. Verification email sent.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 requiresVerification:
+ *                   type: boolean
+ *                   example: true
+ *                 email:
+ *                   type: string
  *       409:
- *         description: Email already exists
+ *         description: Email already in use (and already verified)
  */
 router.post("/signup", signupValidator, validate, signup);
-
 
 /**
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login user and return access token
- *     tags:
- *       - Auth
+ *     summary: Login with email and password
+ *     tags: [Auth]
+ *     description: Returns 403 with requiresVerification=true if email is not yet verified.
  *     requestBody:
  *       required: true
  *       content:
@@ -76,37 +90,69 @@ router.post("/signup", signupValidator, validate, signup);
  *             properties:
  *               email:
  *                 type: string
- *                 example: ahmed@test.com
  *               password:
  *                 type: string
- *                 example: 12345678
  *     responses:
  *       200:
  *         description: Login successful
  *       401:
  *         description: Invalid credentials
+ *       403:
+ *         description: Email not verified
  */
 router.post("/login", loginValidator, validate, login);
 
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     summary: Verify email address via token from email link
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Raw verification token from the emailed link
+ *     responses:
+ *       200:
+ *         description: Email verified. Access token returned.
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.get("/verify-email", verifyEmail);
+
+/**
+ * @swagger
+ * /api/auth/resend-verification:
+ *   post:
+ *     summary: Resend the verification email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Email sent (if account exists and is unverified)
+ *       429:
+ *         description: Rate limited — too soon since last resend
+ */
+router.post("/resend-verification", resendVerification);
 
 /**
  * @swagger
  * /api/auth/refresh:
  *   post:
- *     summary: Refresh access token using refresh token
- *     tags:
- *       - Auth
- *     description: Uses refresh token from httpOnly cookie or request body.
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 example: your_refresh_token_here
+ *     summary: Refresh access token using refresh token cookie
+ *     tags: [Auth]
  *     responses:
  *       200:
  *         description: New access token issued
@@ -115,22 +161,17 @@ router.post("/login", loginValidator, validate, login);
  */
 router.post("/refresh", refresh);
 
-
 /**
  * @swagger
  * /api/auth/logout:
  *   post:
- *     summary: Logout user and revoke refresh token
- *     tags:
- *       - Auth
- *     description: Requires Bearer token. Revokes all refresh tokens and increments tokenVersion so the current access token cannot be used.
+ *     summary: Logout and revoke session
+ *     tags: [Auth]
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Logged out successfully
- *       401:
- *         description: Unauthorized
+ *         description: Logged out
  */
 router.post("/logout", auth, logout);
 
@@ -145,8 +186,6 @@ router.post("/logout", auth, logout);
  *     responses:
  *       200:
  *         description: Current user info
- *       401:
- *         description: Unauthorized
  */
 router.get("/profile", auth, profile);
 
@@ -156,7 +195,6 @@ router.get("/profile", auth, profile);
  *   post:
  *     summary: Request password reset
  *     tags: [Auth]
- *     description: Sends a reset token for the given email. In production, send token via email; for testing it is returned in the response.
  *     requestBody:
  *       required: true
  *       content:
@@ -167,10 +205,9 @@ router.get("/profile", auth, profile);
  *             properties:
  *               email:
  *                 type: string
- *                 example: user@example.com
  *     responses:
  *       200:
- *         description: If account exists, reset token is returned (or would be sent by email)
+ *         description: Reset link sent (if account exists)
  */
 router.post("/forgot-password", forgotPasswordValidator, validate, forgotPassword);
 
@@ -180,7 +217,6 @@ router.post("/forgot-password", forgotPasswordValidator, validate, forgotPasswor
  *   post:
  *     summary: Set new password with reset token
  *     tags: [Auth]
- *     description: Verify reset token (proves identity), then set new password. Invalidates existing sessions.
  *     requestBody:
  *       required: true
  *       content:
@@ -191,18 +227,15 @@ router.post("/forgot-password", forgotPasswordValidator, validate, forgotPasswor
  *             properties:
  *               token:
  *                 type: string
- *                 description: Token from forgot-password response or email link
  *               newPassword:
  *                 type: string
- *                 example: NewPass1!
  *               confirmPassword:
  *                 type: string
- *                 example: NewPass1!
  *     responses:
  *       200:
  *         description: Password reset successfully
  *       400:
- *         description: Invalid or expired token / validation error
+ *         description: Invalid or expired token
  */
 router.post("/reset-password", resetPasswordValidator, validate, resetPassword);
 
@@ -210,9 +243,8 @@ router.post("/reset-password", resetPasswordValidator, validate, resetPassword);
  * @swagger
  * /api/auth/change-password:
  *   post:
- *     summary: Change password (logged-in user)
+ *     summary: Change password (requires authentication)
  *     tags: [Auth]
- *     description: Requires current password. Invalidates other sessions.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -227,17 +259,13 @@ router.post("/reset-password", resetPasswordValidator, validate, resetPassword);
  *                 type: string
  *               newPassword:
  *                 type: string
- *                 example: NewPass1!
  *               confirmNewPassword:
  *                 type: string
- *                 example: NewPass1!
  *     responses:
  *       200:
- *         description: Password changed successfully
+ *         description: Password changed
  *       401:
- *         description: Current password incorrect or unauthorized
- *       400:
- *         description: Validation error
+ *         description: Current password incorrect
  */
 router.post("/change-password", auth, changePasswordValidator, validate, changePassword);
 
@@ -245,25 +273,33 @@ router.post("/change-password", auth, changePasswordValidator, validate, changeP
  * @swagger
  * /api/auth/google:
  *   post:
- *     summary: Sign in or register with Google
+ *     summary: Google OAuth sign-in or register (intent-aware)
  *     tags: [Auth]
- *     description: Verify a Google ID token and return JWT tokens. Creates a new account if the user does not exist.
+ *     description: |
+ *       Pass `intent: 'login'` to sign in an existing user only.
+ *       Pass `intent: 'register'` to create a new user only.
+ *       The intent must match the page the user is on.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [idToken]
+ *             required: [idToken, intent]
  *             properties:
  *               idToken:
  *                 type: string
  *                 description: Google ID token from GSI
+ *               intent:
+ *                 type: string
+ *                 enum: [login, register]
  *     responses:
  *       200:
  *         description: Authenticated successfully
  *       401:
- *         description: Invalid Google token
+ *         description: No account found (login intent) or invalid token
+ *       409:
+ *         description: Account already exists (register intent)
  */
 router.post("/google", googleAuth);
 

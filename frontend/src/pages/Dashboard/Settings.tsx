@@ -12,6 +12,7 @@ import {
   getStoredUser,
 } from '../../api/auth'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 
 function initialsFromName(name?: string) {
   const n = (name || '').trim()
@@ -21,7 +22,9 @@ function initialsFromName(name?: string) {
 }
 
 export function Settings() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
+  const user = getStoredUser()
 
   const stored = getStoredUser()
 
@@ -164,7 +167,7 @@ export function Settings() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 z-0">
       <Sidebar />
 
       {/* ✅ Responsive main: no ml on mobile, add top padding for mobile top bar, responsive padding */}
@@ -180,11 +183,11 @@ export function Settings() {
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
           >
-            <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
-              Settings
+            <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 dark:text-white">
+              {t('Settings')}
             </h1>
-            <p className="text-slate-500 mt-1 text-sm sm:text-base">
-              Manage your account
+            <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">
+              {t('Manage your account')}
             </p>
           </motion.header>
 
@@ -213,15 +216,15 @@ export function Settings() {
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-2xl p-5 sm:p-8 shadow-card"
+            className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl border border-transparent dark:border-slate-700/50 rounded-2xl p-5 sm:p-8 shadow-card"
           >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold font-heading text-slate-900">
-                  Profile Information
+                <h2 className="text-lg sm:text-xl font-bold font-heading text-slate-900 dark:text-white">
+                  {t('Profile Information')}
                 </h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Update your personal details.
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {t('Update your personal details.')}
                 </p>
               </div>
 
@@ -231,7 +234,7 @@ export function Settings() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
-                {savingProfile ? 'Saving…' : 'Save'}
+                {savingProfile ? t('Saving...') : t('Save')}
               </button>
             </div>
 
@@ -240,7 +243,11 @@ export function Settings() {
               <div className="flex flex-col items-center gap-4">
                 <div className="relative group cursor-not-allowed">
                   <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-emerald-100 flex items-center justify-center text-3xl sm:text-4xl font-bold text-emerald-700 border-4 border-white shadow-lg overflow-hidden">
-                    {initials}
+                    {user?.picture ? (
+                      <img src={user.picture} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      initials
+                    )}
                   </div>
                 </div>
                 <button
@@ -253,41 +260,41 @@ export function Settings() {
               {/* Form Fields */}
               <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div className="space-y-1 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-600">
-                    Full Name
+                  <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {t('Full Name')}
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     disabled={profileLoading}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all disabled:opacity-60"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all disabled:opacity-60"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-600">
-                    Email Address
+                  <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {t('Email Address')}
                   </label>
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={profileLoading}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all disabled:opacity-60"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all disabled:opacity-60"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-slate-600">
-                    Phone Number
+                  <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                    {t('Phone Number')}
                   </label>
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     disabled={profileLoading}
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all disabled:opacity-60"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all disabled:opacity-60"
                   />
                 </div>
               </div>
@@ -298,15 +305,15 @@ export function Settings() {
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white rounded-2xl p-5 sm:p-8 shadow-card"
+            className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl border border-transparent dark:border-slate-700/50 rounded-2xl p-5 sm:p-8 shadow-card"
           >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="min-w-0">
-                <h2 className="text-lg sm:text-xl font-bold font-heading text-slate-900">
-                  Security
+                <h2 className="text-lg sm:text-xl font-bold font-heading text-slate-900 dark:text-white">
+                  {t('Security')}
                 </h2>
-                <p className="text-sm text-slate-500 mt-1">
-                  Change your password.
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {t('Change your password.')}
                 </p>
               </div>
 
@@ -316,46 +323,46 @@ export function Settings() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-950 disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <Save className="w-4 h-4" />
-                {savingPassword ? 'Updating…' : 'Update Password'}
+                {savingPassword ? t('Updating...') : t('Update Password')}
               </button>
             </div>
 
             <div className="mt-6 w-full max-w-md space-y-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-600">
-                  Current Password
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {t('Current Password')}
                 </label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                   placeholder="••••••••"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-600">
-                  New Password
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {t('New Password')}
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                   placeholder="••••••••"
                 />
               </div>
 
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-600">
-                  Confirm New Password
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
+                  {t('Confirm New Password')}
                 </label>
                 <input
                   type="password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -366,22 +373,21 @@ export function Settings() {
           <motion.div
             initial={{ y: 10, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-red-50/50 rounded-2xl p-5 sm:p-8 shadow-sm border border-red-200"
+            className="bg-red-50/50 dark:bg-red-900/10 rounded-2xl p-5 sm:p-8 shadow-sm border border-red-200 dark:border-red-500/20"
           >
-            <h2 className="text-lg sm:text-xl font-bold font-heading text-red-700 mb-2">
-              Danger Zone
+            <h2 className="text-lg sm:text-xl font-bold font-heading text-red-700 dark:text-red-400 mb-2">
+              {t('Danger Zone')}
             </h2>
-            <p className="text-red-600/80 mb-6 text-sm">
-              Once you delete your account, there is no going back. Please be
-              certain.
+            <p className="text-red-600/80 dark:text-red-400/80 mb-6 text-sm">
+              {t('Once you delete your account, there is no going back. Please be certain.')}
             </p>
 
             <button
               onClick={() => setDeleteOpen(true)}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 border-2 border-red-200 text-red-600 font-semibold rounded-xl hover:bg-red-50 hover:border-red-300 transition-colors"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 border-2 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 font-semibold rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-300 dark:hover:border-red-500/50 transition-colors"
             >
               <Trash2 className="w-5 h-5" />
-              Delete Account
+              {t('Delete Account')}
             </button>
           </motion.div>
         </motion.div>
@@ -404,7 +410,7 @@ export function Settings() {
             />
 
             <motion.div
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-md bg-white dark:bg-slate-800 dark:border dark:border-slate-700/50 rounded-2xl shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -414,13 +420,13 @@ export function Settings() {
               aria-label="Confirm delete account"
             >
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900">
-                  Delete account
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {t('Delete account')}
                 </h3>
                 <button
                   type="button"
                   onClick={() => (deleteLoading ? null : setDeleteOpen(false))}
-                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                   aria-label="Close"
                 >
                   <X className="w-4 h-4" />
@@ -428,9 +434,8 @@ export function Settings() {
               </div>
 
               <div className="p-5">
-                <p className="text-sm text-slate-600">
-                  This action is permanent. Are you sure you want to delete your
-                  account?
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {t('This action is permanent. Are you sure you want to delete your account?')}
                 </p>
 
                 {deleteError && (
@@ -444,9 +449,9 @@ export function Settings() {
                     type="button"
                     onClick={() => setDeleteOpen(false)}
                     disabled={deleteLoading}
-                    className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60"
                   >
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     type="button"
@@ -454,7 +459,7 @@ export function Settings() {
                     disabled={deleteLoading}
                     className="w-full sm:w-auto px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
                   >
-                    {deleteLoading ? 'Deleting…' : 'Delete'}
+                    {deleteLoading ? t('Deleting...') : t('Delete')}
                   </button>
                 </div>
               </div>

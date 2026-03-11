@@ -10,24 +10,31 @@ import {
   ShieldCheck,
   X,
   Menu,
+  Moon,
+  Sun,
+  Globe
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getStoredUser, logout } from '../api/auth'
+import { useTranslation } from 'react-i18next'
+import { useTheme } from '../context/ThemeContext'
 
 export function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const currentPath = location.pathname
+  const { t, i18n } = useTranslation()
+  const { theme, toggleTheme } = useTheme()
 
   const user = getStoredUser()
   const isAdmin = (user?.role || '').toLowerCase() === 'admin'
 
   const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
-    { name: 'Transactions', icon: ArrowLeftRight, path: '/transactions' },
-    { name: 'Report', icon: BarChart3, path: '/report' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
-    ...(isAdmin ? [{ name: 'Admin', icon: ShieldCheck, path: '/admin' }] : []),
+    { name: t('Dashboard'), icon: LayoutDashboard, path: '/dashboard' },
+    { name: t('Transactions'), icon: ArrowLeftRight, path: '/transactions' },
+    { name: t('Report'), icon: BarChart3, path: '/report' },
+    { name: t('Settings'), icon: Settings, path: '/settings' },
+    ...(isAdmin ? [{ name: t('Admin'), icon: ShieldCheck, path: '/admin' }] : []),
   ]
 
   const initials = useMemo(() => {
@@ -63,6 +70,10 @@ export function Sidebar() {
 
   const closeMobile = () => setMobileOpen(false)
 
+  const toggleLanguage = () => {
+    i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')
+  }
+
   return (
     <>
       {/* Mobile top bar */}
@@ -82,7 +93,7 @@ export function Sidebar() {
               💸
             </div>
             <span className="text-white font-bold font-heading truncate">
-              SpendWise
+              {t('SpendWise')}
             </span>
           </div>
 
@@ -106,7 +117,7 @@ export function Sidebar() {
               💸
             </div>
             <h1 className="text-xl font-bold font-heading tracking-tight">
-              SpendWise
+              {t('SpendWise')}
             </h1>
           </div>
         </div>
@@ -142,16 +153,38 @@ export function Sidebar() {
           })}
         </nav>
 
-        {/* Current User + Logout */}
-        <div className="p-4 mt-auto">
+        {/* Theme and Language Toggles */}
+        <div className="px-4 pb-2 flex items-center justify-around">
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            title={theme === 'dark' ? t('Light Mode') : t('Dark Mode')}
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+          <button
+            onClick={toggleLanguage}
+            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+            title={t('English') + ' / ' + t('Arabic')}
+          >
+            <Globe className="w-5 h-5" />
+            <span className="text-xs font-medium uppercase">{i18n.language}</span>
+          </button>
+        </div>
+
+        <div className="p-4 mt-auto border-t border-white/10">
           <div className="rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5">
-            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-              {initials}
-            </div>
+            {user?.picture ? (
+              <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+                {initials}
+              </div>
+            )}
 
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate">
-                {user?.name || 'Guest'}
+                {user?.name || t('Guest')}
               </p>
               <p className="text-xs text-slate-300 truncate">{user?.email || ''}</p>
             </div>
@@ -207,7 +240,7 @@ export function Sidebar() {
                     💸
                   </div>
                   <h1 className="text-lg font-bold font-heading tracking-tight truncate">
-                    SpendWise
+                    {t('SpendWise')}
                   </h1>
                 </div>
 
@@ -261,16 +294,38 @@ export function Sidebar() {
                 })}
               </nav>
 
-              {/* Current User + Logout */}
+              {/* Theme and Language Toggles (Mobile) */}
+              <div className="px-4 py-2 flex items-center justify-around border-t border-white/10">
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+                  title={theme === 'dark' ? t('Light Mode') : t('Dark Mode')}
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+                <button
+                  onClick={toggleLanguage}
+                  className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+                  title={t('English') + ' / ' + t('Arabic')}
+                >
+                  <Globe className="w-5 h-5" />
+                  <span className="text-xs font-medium uppercase">{i18n.language}</span>
+                </button>
+              </div>
+
               <div className="p-4">
                 <div className="rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
-                    {initials}
-                  </div>
+                  {user?.picture ? (
+                    <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
+                      {initials}
+                    </div>
+                  )}
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">
-                      {user?.name || 'Guest'}
+                      {user?.name || t('Guest')}
                     </p>
                     <p className="text-xs text-slate-300 truncate">
                       {user?.email || ''}
@@ -317,7 +372,7 @@ export function Sidebar() {
 
             {/* Dialog */}
             <motion.div
-              className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden"
+              className="relative w-full max-w-md bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden"
               initial={{ opacity: 0, y: 12, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -327,13 +382,13 @@ export function Sidebar() {
               aria-label="Confirm logout"
             >
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900">
-                  Confirm logout
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
+                  {t('Confirm logout')}
                 </h3>
                 <button
                   type="button"
                   onClick={() => (isLoggingOut ? null : setConfirmOpen(false))}
-                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                  className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                   aria-label="Close"
                 >
                   <X className="w-4 h-4" />
@@ -341,8 +396,8 @@ export function Sidebar() {
               </div>
 
               <div className="p-5">
-                <p className="text-sm text-slate-600">
-                  Are you sure you want to log out?
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {t('Are you sure you want to log out?')}
                 </p>
 
                 <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-end">
@@ -350,9 +405,9 @@ export function Sidebar() {
                     type="button"
                     onClick={() => setConfirmOpen(false)}
                     disabled={isLoggingOut}
-                    className="cursor-pointer w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                    className="cursor-pointer w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-60"
                   >
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     className="cursor-pointer w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
@@ -360,7 +415,7 @@ export function Sidebar() {
                     onClick={handleLogout}
                     disabled={isLoggingOut}
                   >
-                    {isLoggingOut ? 'Logging out…' : 'Logout'}
+                    {isLoggingOut ? t('Logging out…') : t('Logout')}
                   </button>
                 </div>
               </div>

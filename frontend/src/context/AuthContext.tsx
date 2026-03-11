@@ -1,13 +1,14 @@
+// src/context/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import type { User } from '../api/auth'
-import { 
-  login as apiLogin, 
-  signup as apiSignup, 
-  logout as apiLogout, 
-  checkSession, 
+import {
+  login as apiLogin,
+  signup as apiSignup,
+  logout as apiLogout,
+  checkSession,
   clearAuth,
   getStoredUser,
-  googleAuth as apiGoogleAuth
+  googleAuth as apiGoogleAuth,
 } from '../api/auth'
 import { onAuthEvent } from '../api/authEvents'
 
@@ -16,10 +17,18 @@ interface AuthContextType {
   isAuthenticated: boolean
   loading: boolean
   login: (credentials: { email: string; password: string }) => Promise<void>
-  signup: (data: any) => Promise<void>
+  /** Returns { requiresVerification, email } — does NOT set user on success */
+  signup: (data: {
+    name: string
+    email: string
+    password: string
+    confirmPassword: string
+    phone: string
+  }) => Promise<{ requiresVerification: boolean; email: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
-  googleLogin: (credential: string) => Promise<void>
+  /** intent-aware Google login: 'login' page or 'register' page */
+  googleLogin: (credential: string, intent: 'login' | 'register') => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,30 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUser = async () => {
     if (isRefreshing.current) return
     isRefreshing.current = true
-    
-    console.log('[AuthProvider] refreshUser starting...');
-    
-    // Only set loading if we don't have a user yet (initial load)
-    const hasExistingUser = !!user || !!getStoredUser();
-    if (!hasExistingUser) {
-      setLoading(true)
-    }
+
+    console.log('[AuthProvider] refreshUser starting...')
+
+    const hasExistingUser = !!user || !!getStoredUser()
+    if (!hasExistingUser) setLoading(true)
 
     try {
-      console.log('[AuthProvider] Triggering checkSession...');
+      console.log('[AuthProvider] Triggering checkSession...')
       const result = await checkSession()
       if (result) {
-        console.log('[AuthProvider] Session restored for:', result.user.email);
+        console.log('[AuthProvider] Session restored for:', result.user.email)
         setUser(result.user)
       } else {
-        // If checkSession failed but we have a stored user, DON'T wipe immediately.
-        // Let the subsequent API calls handle 401s if the token is truly dead.
         if (!hasExistingUser) {
-          console.log('[AuthProvider] No session found, clearing state');
+          console.log('[AuthProvider] No session found, clearing state')
           setUser(null)
           clearAuth()
         } else {
-          console.log('[AuthProvider] Refresh failed, but keeping existing session for now');
+          console.log('[AuthProvider] Refresh failed, but keeping existing session for now')
         }
       }
     } catch (err) {
@@ -67,46 +71,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false)
       isRefreshing.current = false
-      console.log('[AuthProvider] loading set to false');
+      console.log('[AuthProvider] loading set to false')
     }
   }
 
   useEffect(() => {
-    // One-time cleanup of stale/conflicting keys from other sessions or older versions
+    // One-time cleanup of stale/conflicting keys from older versions
     const cleanupStaleData = () => {
-      const recognizedKeys = ['spendwise_token', 'spendwise_user', 'loglevel'];
-      const keysToRemove: string[] = [];
-      
+      const recognized = ['spendwise_token', 'spendwise_user', 'loglevel']
+      const toRemove: string[] = []
       for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && !recognizedKeys.includes(key)) {
-          keysToRemove.push(key);
-        }
+        const key = localStorage.key(i)
+        if (key && !recognized.includes(key)) toRemove.push(key)
       }
-      
-      if (keysToRemove.length > 0) {
-        console.log('[AuthProvider] Cleaning up stale keys:', keysToRemove);
-        keysToRemove.forEach(k => localStorage.removeItem(k));
+      if (toRemove.length > 0) {
+        console.log('[AuthProvider] Cleaning up stale keys:', toRemove)
+        toRemove.forEach((k) => localStorage.removeItem(k))
       }
-    };
+    }
 
-    cleanupStaleData();
-
-    console.log('[AuthProvider] mounted');
+    cleanupStaleData()
+    console.log('[AuthProvider] mounted')
     refreshUser()
 
-    // Listen for global unauthorized events
     const unsubscribe = onAuthEvent((event) => {
-      console.log('[AuthProvider] Auth Event received:', event);
-      if (event === 'unauthorized') {
-        setUser(null)
-      }
+      console.log('[AuthProvider] Auth Event received:', event)
+      if (event === 'unauthorized') setUser(null)
     })
 
     return () => {
       unsubscribe()
-      console.log('[AuthProvider] unmounted');
+      console.log('[AuthProvider] unmounted')
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const login = async (credentials: { email: string; password: string }) => {
@@ -114,13 +111,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(result.user)
   }
 
-  const signup = async (data: any) => {
-    const result = await apiSignup(data)
-    setUser(result.user)
+  /** Signup: do NOT set user — account is unverified until email is confirmed. */
+  const signup = async (data: {
+    name: string
+    email: string
+    password: string
+    confirmPassword: string
+    phone: string
+  }) => {
+    return apiSignup(data) // returns { requiresVerification, email }
   }
 
-  const googleLogin = async (credential: string) => {
-    const result = await apiGoogleAuth(credential)
+  const googleLogin = async (credential: string, intent: 'login' | 'register') => {
+    const result = await apiGoogleAuth(credential, intent)
     setUser(result.user)
   }
 
@@ -152,8 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider')
   return context
 }

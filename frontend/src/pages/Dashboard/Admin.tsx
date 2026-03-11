@@ -324,7 +324,7 @@ export function Admin() {
   }, [activeUsers, totalUsers, newThisWeek])
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 z-0">
       <Sidebar />
 
       {/* ✅ Responsive main: no ml on mobile, add top padding for mobile top bar, responsive padding */}
@@ -341,13 +341,13 @@ export function Admin() {
             className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-end"
           >
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 dark:text-white">
                 Admin Dashboard
               </h1>
-              <h2 className="text-sm sm:text-base text-slate-700 truncate">
+              <h2 className="text-sm sm:text-base text-slate-700 dark:text-slate-300 truncate">
                 Welcome, {user?.name}
               </h2>
-              <p className="text-slate-500 mt-1 text-sm sm:text-base">
+              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">
                 User activity and platform analytics
               </p>
             </div>
@@ -384,18 +384,18 @@ export function Admin() {
               <motion.div
                 key={stat.label}
                 variants={itemVariants}
-                className="bg-white p-5 sm:p-6 rounded-2xl shadow-card flex items-center gap-4"
+                className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl border border-transparent dark:border-slate-700/50 p-5 sm:p-6 rounded-2xl shadow-card flex items-center gap-4"
               >
                 <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color}`}
+                  className={`w-12 h-12 rounded-xl flex items-center justify-center ${stat.color} dark:bg-opacity-20`}
                 >
                   <stat.icon className="w-6 h-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-slate-500 text-sm font-medium truncate">
+                  <p className="text-slate-500 dark:text-slate-400 text-sm font-medium truncate">
                     {stat.label}
                   </p>
-                  <h3 className="text-2xl font-bold font-heading text-slate-900">
+                  <h3 className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
                     {stat.value}
                   </h3>
                 </div>
@@ -407,9 +407,9 @@ export function Admin() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             <motion.div
               variants={itemVariants}
-              className="lg:col-span-2 bg-white rounded-2xl p-5 sm:p-6 shadow-card"
+              className="lg:col-span-2 bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl border border-transparent dark:border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-card"
             >
-              <h3 className="text-lg font-bold font-heading text-slate-900 mb-6">
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-6">
                 Daily Sign-ups
               </h3>
               <div className="h-[260px] sm:h-[300px] w-full">
@@ -454,9 +454,9 @@ export function Admin() {
 
             <motion.div
               variants={itemVariants}
-              className="bg-white rounded-2xl p-5 sm:p-6 shadow-card"
+              className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl border border-transparent dark:border-slate-700/50 rounded-2xl p-5 sm:p-6 shadow-card"
             >
-              <h3 className="text-lg font-bold font-heading text-slate-900 mb-2">
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white mb-2">
                 User Status
               </h3>
               <div className="h-[240px] sm:h-[250px] w-full relative">
@@ -488,10 +488,10 @@ export function Admin() {
 
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="text-center">
-                    <span className="block text-2xl font-bold font-heading text-slate-900">
+                    <span className="block text-2xl font-bold font-heading text-slate-900 dark:text-white">
                       {totalUsers.toLocaleString()}
                     </span>
-                    <span className="text-xs text-slate-400">Users</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">Users</span>
                   </div>
                 </div>
               </div>
@@ -503,7 +503,7 @@ export function Admin() {
                       className="w-2 h-2 rounded-full"
                       style={{ backgroundColor: item.color }}
                     />
-                    <span className="text-slate-600">{item.name}</span>
+                    <span className="text-slate-600 dark:text-slate-300">{item.name}</span>
                   </div>
                 ))}
               </div>
@@ -513,25 +513,25 @@ export function Admin() {
           {/* Users Table */}
           <motion.div
             variants={itemVariants}
-            className="bg-white rounded-2xl shadow-card overflow-hidden"
+            className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl border border-transparent dark:border-slate-700/50 rounded-2xl shadow-card overflow-hidden"
           >
-            <div className="p-5 sm:p-6 border-b border-slate-100 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-              <h3 className="text-lg font-bold font-heading text-slate-900">
+            <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-700/50 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+              <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">
                 Users
               </h3>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 {loadingUsers && (
-                  <span className="text-sm text-slate-500">Loading…</span>
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Loading…</span>
                 )}
                 <div className="relative w-full sm:w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                   <input
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     placeholder="Search users..."
-                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -548,7 +548,7 @@ export function Admin() {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[760px]">
                 <thead>
-                  <tr className="bg-slate-50/50 text-slate-500 text-xs uppercase tracking-wider font-medium border-b border-slate-100">
+                  <tr className="bg-slate-50/50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider font-medium border-b border-slate-100 dark:border-slate-700/50">
                     <th className="px-6 py-4">User</th>
                     <th className="px-6 py-4">Email</th>
                     <th className="px-6 py-4">Signed Up</th>
@@ -558,10 +558,10 @@ export function Admin() {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                   {!loadingUsers && filteredRows.length === 0 ? (
                     <tr>
-                      <td className="px-6 py-8 text-sm text-slate-500" colSpan={6}>
+                      <td className="px-6 py-8 text-sm text-slate-500 dark:text-slate-400" colSpan={6}>
                         No users found.
                       </td>
                     </tr>
@@ -573,35 +573,35 @@ export function Admin() {
                       return (
                         <tr
                           key={user.id || user.email || index}
-                          className={`hover:bg-slate-50/80 transition-colors ${
-                            index % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'
+                          className={`hover:bg-slate-50/80 dark:hover:bg-slate-700/50 transition-colors ${
+                            index % 2 === 0 ? 'bg-white dark:bg-slate-800/80' : 'bg-slate-50/30 dark:bg-slate-900/30'
                           }`}
                         >
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <div
-                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${avatarClass}`}
+                                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${avatarClass} dark:bg-opacity-20`}
                                 title={user.name}
                               >
                                 {user.initials}
                               </div>
-                              <span className="font-medium text-slate-900">
+                              <span className="font-medium text-slate-900 dark:text-white">
                                 {user.name || '—'}
                               </span>
                             </div>
                           </td>
 
-                          <td className="px-6 py-4 text-slate-500 text-sm">
+                          <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                             {user.email || '—'}
                           </td>
 
-                          <td className="px-6 py-4 text-slate-500 text-sm">
+                          <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-sm">
                             {user.signedUpLabel}
                           </td>
 
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.statusClass}`}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-opacity-20 ${user.statusClass}`}
                             >
                               {user.status}
                             </span>
@@ -609,7 +609,7 @@ export function Admin() {
 
                           <td className="px-6 py-4">
                             <span
-                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.planClass}`}
+                              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium dark:bg-opacity-20 ${user.planClass}`}
                             >
                               {user.plan}
                             </span>
@@ -620,7 +620,7 @@ export function Admin() {
                               <button
                                 type="button"
                                 onClick={() => openEditModal(user)}
-                                className="p-2 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                className="p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
                                 title="Edit user"
                               >
                                 <Pencil className="w-4 h-4" />
@@ -629,7 +629,7 @@ export function Admin() {
                                 type="button"
                                 onClick={() => openDeleteModal(user)}
                                 disabled={deletingId === (user.id ?? (user as User & { _id?: string })._id)}
-                                className="p-2 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
                                 title="Delete user"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -651,16 +651,16 @@ export function Admin() {
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md"
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md border border-transparent dark:border-slate-700/50"
               >
-                <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                  <h3 className="text-lg font-bold font-heading text-slate-900">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700/50">
+                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">
                     Edit user
                   </h3>
                   <button
                     type="button"
                     onClick={closeEditModal}
-                    className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors"
+                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                     aria-label="Close"
                   >
                     <X className="w-5 h-5" />
@@ -668,12 +668,12 @@ export function Admin() {
                 </div>
                 <form onSubmit={handleEditSubmit} className="p-6 space-y-4">
                   {editError && (
-                    <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                    <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">
                       {editError}
                     </p>
                   )}
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Name
                     </label>
                     <input
@@ -682,12 +682,12 @@ export function Admin() {
                       onChange={(e) =>
                         setEditForm((f) => ({ ...f, name: e.target.value }))
                       }
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-4 py-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Full name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Email
                     </label>
                     <input
@@ -696,12 +696,12 @@ export function Admin() {
                       onChange={(e) =>
                         setEditForm((f) => ({ ...f, email: e.target.value }))
                       }
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-4 py-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="email@example.com"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Phone
                     </label>
                     <input
@@ -710,12 +710,12 @@ export function Admin() {
                       onChange={(e) =>
                         setEditForm((f) => ({ ...f, phone: e.target.value }))
                       }
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-4 py-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white dark:placeholder-slate-500 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                       placeholder="Phone number"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Role
                     </label>
                     <select
@@ -726,10 +726,10 @@ export function Admin() {
                           role: e.target.value as 'user' | 'admin',
                         }))
                       }
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-4 py-2 bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 dark:text-white rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
+                      <option value="user" className="dark:bg-slate-800">User</option>
+                      <option value="admin" className="dark:bg-slate-800">Admin</option>
                     </select>
                   </div>
 
@@ -737,7 +737,7 @@ export function Admin() {
                     <button
                       type="button"
                       onClick={closeEditModal}
-                      className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 font-medium transition-colors"
+                      className="flex-1 px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors"
                     >
                       Cancel
                     </button>
@@ -762,20 +762,20 @@ export function Admin() {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 12, scale: 0.98 }}
                 transition={{ duration: 0.18 }}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-transparent dark:border-slate-700/50"
                 role="dialog"
                 aria-modal="true"
                 aria-label="Confirm delete user"
               >
-                <div className="flex items-center justify-between p-6 border-b border-slate-100">
-                  <h3 className="text-lg font-bold font-heading text-slate-900">
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700/50">
+                  <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">
                     Delete user
                   </h3>
                   <button
                     type="button"
                     onClick={closeDeleteModal}
                     disabled={!!deletingId}
-                    className="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors disabled:opacity-50"
+                    className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
                     aria-label="Close"
                   >
                     <X className="w-5 h-5" />
@@ -783,16 +783,16 @@ export function Admin() {
                 </div>
 
                 <div className="p-6">
-                  <p className="text-sm text-slate-600">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
                     Are you sure you want to delete{' '}
-                    <span className="font-semibold text-slate-900">
+                    <span className="font-semibold text-slate-900 dark:text-white">
                       {deleteTarget.name || deleteTarget.email || 'this user'}
                     </span>
                     ? This action cannot be undone.
                   </p>
 
                   {deleteError && (
-                    <p className="mt-4 text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                    <p className="mt-4 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-lg px-3 py-2">
                       {deleteError}
                     </p>
                   )}
@@ -802,7 +802,7 @@ export function Admin() {
                       type="button"
                       onClick={closeDeleteModal}
                       disabled={!!deletingId}
-                      className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                      className="w-full sm:w-auto px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-medium transition-colors"
                     >
                       Cancel
                     </button>

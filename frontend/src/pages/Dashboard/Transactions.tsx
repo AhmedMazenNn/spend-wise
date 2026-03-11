@@ -9,6 +9,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { Sidebar } from '../../components/Sidebar'
+import { useTranslation } from 'react-i18next'
 import {
   fetchExpenses,
   updateExpense,
@@ -28,19 +29,12 @@ const PERIOD_MAP: Record<TimePeriod, string> = {
   All: 'all',
 }
 
-function getCategoryBg(category: string): string {
-  const map: Record<string, string> = {
-    Food: 'bg-orange-100',
-    Transport: 'bg-blue-100',
-    Shopping: 'bg-pink-100',
-    Bills: 'bg-purple-100',
-    Health: 'bg-emerald-100',
-    Fun: 'bg-amber-100',
-  }
-  return map[category] ?? 'bg-slate-100'
-}
+
 
 export function TransactionsPage() {
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US'
+
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -104,6 +98,14 @@ export function TransactionsPage() {
       .catch(() => setCategories([]))
   }, [])
 
+  const categoryColorMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    categories.forEach((c) => {
+      if (c.color) map[c.name] = c.color
+    })
+    return map
+  }, [categories])
+
   const categoryFilterOptions = useMemo(() => {
     const names = new Set(expenses.map((e) => e.category))
     return ['All', ...Array.from(names).sort()]
@@ -128,7 +130,7 @@ export function TransactionsPage() {
       setDeleteConfirm(null)
       loadExpenses()
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Delete failed')
+      alert(e instanceof Error ? e.message : t('Delete failed'))
     }
   }
 
@@ -158,11 +160,11 @@ export function TransactionsPage() {
             className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-3 mb-6 sm:mb-8"
           >
             <div className="min-w-0">
-              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900">
-                Transactions
+              <h1 className="text-2xl sm:text-3xl font-bold font-heading text-slate-900 dark:text-white">
+                {t('Transactions')}
               </h1>
-              <p className="text-slate-500 mt-1 text-sm sm:text-base">
-                View and manage all your expenses
+              <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm sm:text-base">
+                {t('View and manage all your expenses')}
               </p>
             </div>
           </motion.header>
@@ -171,7 +173,7 @@ export function TransactionsPage() {
           <motion.div variants={itemVariants} className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:gap-2 sm:items-center">
               {/* ✅ scrollable pills on mobile */}
-              <div className="flex gap-2 bg-slate-100 p-1 rounded-full overflow-x-auto scrollbar-hide w-full sm:w-auto">
+              <div className="flex gap-2 bg-slate-100 dark:bg-slate-800/80 p-1 rounded-full overflow-x-auto scrollbar-hide w-full sm:w-auto">
                 {(['Today', 'Week', 'Month', 'All'] as TimePeriod[]).map((period) => (
                   <button
                     key={period}
@@ -182,26 +184,26 @@ export function TransactionsPage() {
                     className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
                       filterMode === 'preset' && selectedPeriod === period
                         ? 'bg-emerald-600 text-white shadow-sm'
-                        : 'text-slate-600 hover:text-slate-900'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                     }`}
                   >
-                    {period}
+                    {t(period)}
                   </button>
                 ))}
               </div>
 
-              <div className="hidden sm:block w-px h-8 bg-slate-200 mx-2" />
+              <div className="hidden sm:block w-px h-8 bg-slate-200 dark:bg-slate-700 mx-2" />
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 sm:items-center">
                 <button
                   onClick={() => setFilterMode('custom')}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
                     filterMode === 'custom'
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                   }`}
                 >
-                  Custom Range
+                  {t('Custom Range')}
                 </button>
 
                 {filterMode === 'custom' && (
@@ -216,16 +218,16 @@ export function TransactionsPage() {
                       onChange={(e) =>
                         setCustomRange((prev) => ({ ...prev, start: e.target.value }))
                       }
-                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 w-full sm:w-auto"
+                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200 w-full sm:w-auto"
                     />
-                    <span className="text-slate-400 text-sm hidden sm:inline">to</span>
+                    <span className="text-slate-400 text-sm hidden sm:inline">{t('to')}</span>
                     <input
                       type="date"
                       value={customRange.end}
                       onChange={(e) =>
                         setCustomRange((prev) => ({ ...prev, end: e.target.value }))
                       }
-                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 w-full sm:w-auto"
+                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200 w-full sm:w-auto"
                     />
                   </motion.div>
                 )}
@@ -238,43 +240,43 @@ export function TransactionsPage() {
             variants={itemVariants}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
           >
-            <div className="bg-white p-5 rounded-2xl shadow-card">
-              <p className="text-slate-500 text-sm font-medium mb-1">Total Spent</p>
-              <h3 className="text-2xl font-bold font-heading text-slate-900">
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 p-5 rounded-2xl shadow-card">
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">{t('Total Spent')}</p>
+              <h3 className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
                 $
-                {stats.totalSpent.toLocaleString(undefined, {
+                {stats.totalSpent.toLocaleString(locale, {
                   minimumFractionDigits: 2,
                 })}
               </h3>
             </div>
-            <div className="bg-white p-5 rounded-2xl shadow-card">
-              <p className="text-slate-500 text-sm font-medium mb-1">
-                Avg. Transaction
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 p-5 rounded-2xl shadow-card">
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
+                {t('Avg. Transaction')}
               </p>
-              <h3 className="text-2xl font-bold font-heading text-slate-900">
+              <h3 className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
                 $
-                {stats.avgTransaction.toLocaleString(undefined, {
+                {stats.avgTransaction.toLocaleString(locale, {
                   minimumFractionDigits: 2,
                 })}
               </h3>
             </div>
-            <div className="bg-white p-5 rounded-2xl shadow-card">
-              <p className="text-slate-500 text-sm font-medium mb-1">
-                Highest Expense
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 p-5 rounded-2xl shadow-card">
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
+                {t('Highest Expense')}
               </p>
-              <h3 className="text-2xl font-bold font-heading text-slate-900">
+              <h3 className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
                 $
-                {stats.highest.toLocaleString(undefined, {
+                {stats.highest.toLocaleString(locale, {
                   minimumFractionDigits: 2,
                 })}
               </h3>
             </div>
-            <div className="bg-white p-5 rounded-2xl shadow-card">
-              <p className="text-slate-500 text-sm font-medium mb-1">
-                Total Count
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 p-5 rounded-2xl shadow-card">
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
+                {t('Total Count')}
               </p>
-              <h3 className="text-2xl font-bold font-heading text-blue-600">
-                {stats.count}
+              <h3 className="text-2xl font-bold font-heading text-blue-600 dark:text-blue-400">
+                {stats.count.toLocaleString(locale)}
               </h3>
             </div>
           </motion.div>
@@ -282,17 +284,17 @@ export function TransactionsPage() {
           {/* Filter Bar */}
           <motion.div
             variants={itemVariants}
-            className="bg-white p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between sticky top-0 z-10"
+            className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl dark:border dark:border-slate-700/50 p-4 rounded-2xl shadow-card flex flex-col md:flex-row gap-4 items-stretch md:items-center justify-between sticky top-0 z-10"
           >
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="relative flex-1 md:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Search expenses..."
+                  placeholder={t('Search expenses...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all"
+                  className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all text-slate-900 dark:text-white dark:placeholder-slate-500"
                 />
               </div>
             </div>
@@ -304,11 +306,11 @@ export function TransactionsPage() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                     selectedCategory === cat
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 dark:shadow-none'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
-                  {cat}
+                  {t(cat)}
                 </button>
               ))}
             </div>
@@ -317,7 +319,7 @@ export function TransactionsPage() {
           {/* Transactions List */}
           <motion.div variants={itemVariants} className="space-y-3 pb-12">
             {loading ? (
-              <div className="text-center py-12 text-slate-500">Loading...</div>
+              <div className="text-center py-12 text-slate-500">{t('Loading...')}</div>
             ) : (
               <AnimatePresence>
                 {filteredTransactions.map((tx) => (
@@ -327,18 +329,22 @@ export function TransactionsPage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden"
+                    className="bg-white dark:bg-slate-800/80 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/50 overflow-hidden"
                   >
                     <div
                       onClick={() =>
                         setExpandedId(expandedId === tx.id ? null : tx.id)
                       }
-                      className="p-4 flex items-start sm:items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors"
+                      className="p-4 flex items-start sm:items-center gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
                     >
                       <div
-                        className={`w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0 ${getCategoryBg(
-                          tx.category,
-                        )}`}
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-xl flex-shrink-0"
+                        style={{
+                          backgroundColor: categoryColorMap[tx.category]
+                            ? `${categoryColorMap[tx.category]}33`
+                            : undefined,
+                          color: categoryColorMap[tx.category] || undefined,
+                        }}
                       >
                         {tx.emoji}
                       </div>
@@ -347,29 +353,29 @@ export function TransactionsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <h4 className="font-bold font-heading text-slate-900 truncate">
+                            <h4 className="font-bold font-heading text-slate-900 dark:text-white truncate">
                               {tx.title}
                             </h4>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
-                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                                {tx.category}
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                {t(tx.category)}
                               </span>
-                              <span className="inline-flex items-center gap-1 text-xs text-slate-500 md:hidden">
-                                <Calendar className="w-3 h-3" /> {tx.date}
+                              <span className="inline-flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 md:hidden">
+                                <Calendar className="w-3 h-3" /> {new Date(tx.date).toLocaleDateString(locale)}
                               </span>
                             </div>
                           </div>
 
                           <div className="text-right flex-shrink-0">
-                            <div className="font-bold font-heading text-base sm:text-lg text-slate-900">
-                              -${tx.amount.toFixed(2)}
+                            <div className="font-bold font-heading text-base sm:text-lg text-slate-900 dark:text-white">
+                              -${tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
                             </div>
                           </div>
                         </div>
 
-                        <div className="hidden md:flex flex-col text-sm text-slate-500 mt-2">
+                        <div className="hidden md:flex flex-col text-sm text-slate-500 dark:text-slate-400 mt-2">
                           <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" /> {tx.date}
+                            <Calendar className="w-3 h-3" /> {new Date(tx.date).toLocaleDateString(locale)}
                           </span>
                         </div>
                       </div>
@@ -390,15 +396,15 @@ export function TransactionsPage() {
                           animate={{ height: 'auto', opacity: 1 }}
                           exit={{ height: 0, opacity: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="border-t border-slate-100 bg-slate-50/50"
+                          className="border-t border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/40"
                         >
                           <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                             <div className="space-y-4">
                               <div>
                                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                  Note
+                                  {t('Note')}
                                 </label>
-                                <p className="text-slate-700 mt-1 break-words">
+                                <p className="text-slate-700 dark:text-slate-300 mt-1 break-words">
                                   {tx.note || '—'}
                                 </p>
                               </div>
@@ -406,18 +412,18 @@ export function TransactionsPage() {
                               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                    Transaction ID
+                                    {t('Transaction ID')}
                                   </label>
-                                  <p className="text-slate-700 font-mono text-sm mt-1">
+                                  <p className="text-slate-700 dark:text-slate-300 font-mono text-sm mt-1">
                                     #{String(tx.id).slice(-8)}
                                   </p>
                                 </div>
                                 <div>
                                   <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                                    Date
+                                    {t('Date')}
                                   </label>
-                                  <p className="text-slate-700 text-sm mt-1">
-                                    {tx.date}
+                                  <p className="text-slate-700 dark:text-slate-300 text-sm mt-1">
+                                    {new Date(tx.date).toLocaleDateString(locale)}
                                   </p>
                                 </div>
                               </div>
@@ -430,18 +436,18 @@ export function TransactionsPage() {
                                     e.stopPropagation()
                                     setEditModal(tx)
                                   }}
-                                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors text-sm font-medium"
+                                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors text-sm font-medium"
                                 >
-                                  <Edit2 className="w-4 h-4" /> Edit
+                                  <Edit2 className="w-4 h-4" /> {t('Edit')}
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     setDeleteConfirm(tx.id)
                                   }}
-                                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors text-sm font-medium"
+                                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors text-sm font-medium"
                                 >
-                                  <Trash2 className="w-4 h-4" /> Delete
+                                  <Trash2 className="w-4 h-4" /> {t('Delete')}
                                 </button>
                               </div>
                             </div>
@@ -456,22 +462,22 @@ export function TransactionsPage() {
 
             {!loading && filteredTransactions.length > 0 && (
               <p className="text-slate-500 text-sm mt-4">
-                Showing {filteredTransactions.length}
-                {selectedCategory !== 'All' ? ` of ${expenses.length}` : ` of ${total}`}{' '}
-                transactions
+                {t('Showing')} {filteredTransactions.length.toLocaleString(locale)}
+                {selectedCategory !== 'All' ? ` ${t('of_total')} ${expenses.length.toLocaleString(locale)}` : ` ${t('of_total')} ${total.toLocaleString(locale)}`}{' '}
+                {t('transactions')}
               </p>
             )}
 
             {!loading && filteredTransactions.length === 0 && (
               <div className="text-center py-12">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
                   🔍
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  No transactions found
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {t('No transactions found')}
                 </h3>
                 <p className="text-slate-500">
-                  Try adjusting your filters or search terms
+                  {t('Try adjusting your filters or search terms')}
                 </p>
               </div>
             )}
@@ -511,17 +517,17 @@ export function TransactionsPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4"
             >
-              <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full">
-                <h3 className="text-lg font-bold text-slate-900 mb-2">
+              <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 max-w-sm w-full dark:border dark:border-slate-700/50">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   Delete expense?
                 </h3>
-                <p className="text-slate-500 text-sm mb-6">
+                <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
                   This action cannot be undone.
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setDeleteConfirm(null)}
-                    className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50"
+                    className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
                     Cancel
                   </button>
@@ -554,6 +560,7 @@ function EditExpenseModal({
   onClose,
   onSuccess,
 }: EditExpenseModalProps) {
+  const { t } = useTranslation()
   const resolvedCategoryId =
     expense.categoryId ??
     categories.find((c) => c.name === expense.category)?.id ??
@@ -586,7 +593,7 @@ function EditExpenseModal({
       })
       onSuccess()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Update failed')
+      alert(err instanceof Error ? err.message : t('Update failed'))
     } finally {
       setSaving(false)
     }
@@ -608,14 +615,14 @@ function EditExpenseModal({
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
         <div
-          className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full"
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 max-w-md w-full dark:border dark:border-slate-700/50"
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 className="text-xl font-bold text-slate-900 mb-6">Edit Expense</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-6">{t('Edit Expense')}</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                Amount
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                {t('Amount')}
               </label>
               <input
                 type="number"
@@ -623,51 +630,51 @@ function EditExpenseModal({
                 min="0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                Title
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                {t('Title')}
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                Note
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                {t('Note')}
               </label>
               <input
                 type="text"
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-600 mb-1">
-                Date
+              <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                {t('Date')}
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
             {categories.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-slate-600 mb-1">
-                  Category
+                <label className="block text-sm font-medium text-slate-600 dark:text-slate-300 mb-1">
+                  {t('Category')}
                 </label>
                 <select
                   value={categoryId}
                   onChange={(e) => setCategoryId(e.target.value)}
-                  className="w-full px-4 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -681,16 +688,16 @@ function EditExpenseModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 py-2 rounded-xl border border-slate-200 text-slate-600"
+                className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 type="submit"
                 disabled={saving}
                 className="flex-1 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('Saving...') : t('Save')}
               </button>
             </div>
           </form>
