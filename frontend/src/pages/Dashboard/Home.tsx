@@ -634,13 +634,19 @@ function Home() {
 
       {/* FAB */}
       <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 w-14 h-14 sm:w-16 sm:h-16 bg-emerald-600 text-white rounded-full shadow-lg shadow-emerald-600/30 flex items-center justify-center z-30 hover:bg-emerald-500 transition-colors"
-      >
-        <Plus className="w-7 h-7 sm:w-8 sm:h-8" />
-      </motion.button>
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsModalOpen(true)}
+          className={`fixed bottom-4 sm:bottom-8 
+          ${isArabic ? 'left-4 sm:left-8' : 'right-4 sm:right-8'} 
+          w-14 h-14 sm:w-16 sm:h-16 
+          bg-emerald-600 text-white rounded-full 
+          shadow-lg shadow-emerald-600/30 
+          flex items-center justify-center z-30 
+          hover:bg-emerald-500 transition-colors`}
+        >
+          <Plus className="w-7 h-7 sm:w-8 sm:h-8" />
+        </motion.button>
 
       <AddExpenseModal
         isOpen={isModalOpen}
