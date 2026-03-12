@@ -292,6 +292,7 @@ export function AddExpenseModal({
                           <input
                             type="date"
                             value={date}
+                            lang={i18n.language}
                             onChange={(e) => setDate(e.target.value)}
                             className="w-full px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-transparent dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 transition-all text-slate-600 dark:text-slate-200"
                           />

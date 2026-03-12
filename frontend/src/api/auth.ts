@@ -187,7 +187,9 @@ export async function signup(input: {
   const data = await res.json()
 
   if (!res.ok) {
-    throw new Error(data?.message ?? 'Registration failed')
+    const err = new Error(data?.message ?? 'Registration failed') as any
+    err.errors = data?.errors || []
+    throw err
   }
 
   // Never call saveAuth here — user is unverified

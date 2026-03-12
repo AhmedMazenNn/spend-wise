@@ -220,21 +220,23 @@ export function TransactionsPage() {
                     <input
                       type="date"
                       value={customRange.start}
+                      lang={i18n.language}
                       onChange={(e) =>
                         setCustomRange((prev) => ({ ...prev, start: e.target.value }))
                       }
                       className="px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200 w-full sm:w-auto"
                     />
-                    <span className="text-slate-400 text-sm hidden sm:inline">{t('to')}</span>
+                   <span className="text-slate-400 text-sm hidden sm:inline">{t('to')}</span>
                     <input
                       type="date"
                       value={customRange.end}
+                      lang={i18n.language}
                       onChange={(e) =>
                         setCustomRange((prev) => ({ ...prev, end: e.target.value }))
                       }
                       className="px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200 w-full sm:w-auto"
                     />
-                  </motion.div>
+                 </motion.div>
                 )}
               </div>
             </div>
@@ -524,23 +526,23 @@ export function TransactionsPage() {
             >
               <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6 max-w-sm w-full dark:border dark:border-slate-700/50">
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
-                  Delete expense?
+                  {t('Delete expense?')}
                 </h3>
                 <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">
-                  This action cannot be undone.
+                  {t('This action cannot be undone.')}
                 </p>
                 <div className="flex gap-3">
                   <button
                     onClick={() => setDeleteConfirm(null)}
                     className="flex-1 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
                   >
-                    Cancel
+                    {t('Cancel')}
                   </button>
                   <button
                     onClick={() => handleDelete(deleteConfirm)}
                     className="flex-1 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700"
                   >
-                    Delete
+                    {t('Delete')}
                   </button>
                 </div>
               </div>

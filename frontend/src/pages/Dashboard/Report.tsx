@@ -63,22 +63,23 @@ function getPeriodLabel(
   selectedMonth: string,
   selectedDate: string,
   dateRange: { start: string; end: string },
+  locale: string
 ): string {
   switch (filterMode) {
     case 'month':
-      return new Date(selectedMonth + '-01').toLocaleDateString(undefined, {
+      return new Date(selectedMonth + '-01').toLocaleDateString(locale, {
         month: 'long',
         year: 'numeric',
       })
     case 'date':
-      return new Date(selectedDate).toLocaleDateString(undefined, {
+      return new Date(selectedDate).toLocaleDateString(locale, {
         weekday: 'long',
         year: 'numeric',
         month: 'long',
         day: 'numeric',
       })
     case 'range':
-      return `${new Date(dateRange.start).toLocaleDateString()} – ${new Date(dateRange.end).toLocaleDateString()}`
+      return `${new Date(dateRange.start).toLocaleDateString(locale)} – ${new Date(dateRange.end).toLocaleDateString(locale)}`
     default:
       return ''
   }
@@ -251,7 +252,10 @@ export function Report() {
     return { totalSpent, dailyAvg, highestDay, topCategory, categoryList, dailySpending, categoryData }
   }, [filteredTransactions, filterMode, selectedMonth, dateRange])
 
-  const periodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange)
+  const periodLabel = useMemo(
+    () => getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, locale),
+    [filterMode, selectedMonth, selectedDate, dateRange, locale],
+  )
 
   const handleExportPDF = async () => {
     setExporting('pdf')

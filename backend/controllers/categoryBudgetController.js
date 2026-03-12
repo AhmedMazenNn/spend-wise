@@ -6,8 +6,7 @@ const CategoryBudget = require("../models/CategoryBudget");
 async function setCategoryBudget(req, res, next) {
   try {
     const userId = req.user._id;
-    const { categoryId, amount, startDate, endDate } = req.body;
-
+    const { categoryId, amount, startDate, endDate, warningThreshold } = req.body;
     if (!categoryId || !amount || !startDate || !endDate) {
       return res.status(400).json({ message: "Missing required fields" });
     }
@@ -24,6 +23,7 @@ async function setCategoryBudget(req, res, next) {
       amount: Number(amount),
       startDate: new Date(startDate),
       endDate: new Date(endDate),
+      warningThreshold: warningThreshold !== undefined ? Number(warningThreshold) : 70,
       isActive: true,
     });
 
@@ -34,6 +34,7 @@ async function setCategoryBudget(req, res, next) {
         amount: budget.amount,
         startDate: budget.startDate,
         endDate: budget.endDate,
+        warningThreshold: budget.warningThreshold || 70,
       },
     });
   } catch (err) {
@@ -63,6 +64,7 @@ async function getCategoryBudgets(req, res, next) {
         amount: b.amount,
         startDate: b.startDate,
         endDate: b.endDate,
+        warningThreshold: b.warningThreshold || 70,
       })),
     });
   } catch (err) {

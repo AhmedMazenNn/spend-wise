@@ -31,6 +31,8 @@ export interface DashboardResponse {
     percentage: number
     remaining: number
     isOver: boolean
+    warningThreshold: number
+    isWarning: boolean
   } | null
 }
 

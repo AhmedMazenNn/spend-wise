@@ -15,6 +15,7 @@ export interface Budget {
   amount: number
   startDate: string
   endDate: string
+  warningThreshold?: number
   id?: string
 }
 
@@ -23,6 +24,7 @@ export interface BudgetStats {
   percentage: number
   remaining: number
   isOver: boolean
+  isWarning: boolean
 }
 
 export function useExpenseData(
@@ -73,6 +75,7 @@ export function useExpenseData(
               amount: res.activeBudget.amount,
               startDate: res.activeBudget.startDate,
               endDate: res.activeBudget.endDate,
+              warningThreshold: res.activeBudget.warningThreshold,
             }
           : null,
         budgetStats: res.activeBudget
@@ -81,6 +84,7 @@ export function useExpenseData(
               percentage: res.activeBudget.percentage,
               remaining: res.activeBudget.remaining,
               isOver: res.activeBudget.isOver,
+              isWarning: res.activeBudget.isWarning,
             }
           : null,
       })

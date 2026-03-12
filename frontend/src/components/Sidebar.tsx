@@ -80,13 +80,19 @@ export function Sidebar() {
       {/* Mobile top bar */}
       <div
         dir={dir}
-        className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-b border-white/10"
+        className={`lg:hidden fixed top-0 left-0 right-0 z-30 border-b transition-colors duration-300 ${
+          theme === 'dark' 
+            ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-white/10' 
+            : 'bg-white border-slate-200 shadow-sm'
+        }`}
       >
         <div className="h-16 px-4 flex items-center justify-between">
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl text-slate-200 hover:bg-white/10"
+            className={`p-2 rounded-xl transition-colors ${
+              theme === 'dark' ? 'text-slate-200 hover:bg-white/10' : 'text-slate-600 hover:bg-slate-100'
+            }`}
             aria-label="Open sidebar"
           >
             <Menu className="w-5 h-5" />
@@ -96,7 +102,7 @@ export function Sidebar() {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
               💸
             </div>
-            <span className="text-white font-bold font-heading truncate">
+            <span className={`font-bold font-heading truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               {t('SpendWise')}
             </span>
           </div>
@@ -109,9 +115,11 @@ export function Sidebar() {
       <aside
         dir={dir}
         className={[
-          'hidden lg:flex fixed top-0 h-screen w-64 text-white flex-col z-20',
-          'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950',
-          isArabic ? 'right-0 border-l border-white/10' : 'left-0 border-r border-white/10',
+          'hidden lg:flex fixed top-0 h-screen w-64 flex-col z-20 transition-colors duration-300',
+          theme === 'dark' 
+            ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white border-white/10' 
+            : 'bg-white text-slate-900 border-slate-200 shadow-xl',
+          isArabic ? 'right-0 border-l' : 'left-0 border-r',
         ].join(' ')}
       >
         {/* Logo */}
@@ -147,7 +155,9 @@ export function Sidebar() {
                     isArabic ? 'flex-row-reverse gap-3 text-right' : 'gap-3',
                     isActive
                       ? 'text-white'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10',
+                      : theme === 'dark'
+                        ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                        : 'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50',
                   ].join(' ')}
                 >
                   <item.icon className="w-5 h-5 shrink-0" />
@@ -162,14 +172,18 @@ export function Sidebar() {
         <div className="px-4 pb-2 flex items-center justify-around">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors"
+            className={`p-2 rounded-xl transition-colors ${
+              theme === 'dark' ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'
+            }`}
             title={theme === 'dark' ? t('Light Mode') : t('Dark Mode')}
           >
             {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
           <button
             onClick={toggleLanguage}
-            className={`p-2 rounded-xl text-slate-300 hover:text-white hover:bg-white/10 transition-colors flex items-center ${isArabic ? 'flex-row-reverse' : ''} gap-2`}
+            className={`p-2 rounded-xl transition-colors flex items-center ${isArabic ? 'flex-row-reverse' : ''} gap-2 ${
+              theme === 'dark' ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'
+            }`}
             title={t('English') + ' / ' + t('Arabic')}
           >
             <Globe className="w-5 h-5" />
@@ -177,10 +191,11 @@ export function Sidebar() {
           </button>
         </div>
 
-        <div className="p-4 mt-auto border-t border-white/10">
+        <div className={`p-4 mt-auto border-t transition-colors ${theme === 'dark' ? 'border-white/10' : 'border-slate-100'}`}>
           <div
             className={[
-              'rounded-2xl p-4 flex items-center gap-3 border border-white/10 bg-white/5',
+              'rounded-2xl p-4 flex items-center gap-3 border transition-colors',
+              theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-slate-200 bg-slate-50',
               isArabic ? 'flex-row-reverse text-right' : '',
             ].join(' ')}
           >
@@ -193,15 +208,17 @@ export function Sidebar() {
             )}
 
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold truncate">
+              <p className={`text-sm font-semibold truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                 {user?.name || t('Guest')}
               </p>
-              <p className="text-xs text-slate-300 truncate">{user?.email || ''}</p>
+              <p className={`text-xs truncate ${theme === 'dark' ? 'text-slate-300' : 'text-slate-500'}`}>{user?.email || ''}</p>
             </div>
 
             <button
               onClick={() => setConfirmOpen(true)}
-              className="cursor-pointer text-slate-300 hover:text-green-600 transition-colors"
+              className={`cursor-pointer transition-colors ${
+                theme === 'dark' ? 'text-slate-300 hover:text-emerald-400' : 'text-slate-500 hover:text-emerald-600'
+              }`}
               aria-label="Logout"
               type="button"
             >
@@ -234,11 +251,11 @@ export function Sidebar() {
             <motion.aside
               dir={dir}
               className={[
-                'lg:hidden fixed top-0 bottom-0 z-50 w-[86vw] max-w-xs text-white flex flex-col',
-                'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950',
-                isArabic
-                  ? 'right-0 border-l border-white/10'
-                  : 'left-0 border-r border-white/10',
+                'lg:hidden fixed top-0 bottom-0 z-50 w-[86vw] max-w-xs flex flex-col transition-colors duration-300',
+                theme === 'dark' 
+                  ? 'bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white border-white/10' 
+                  : 'bg-white text-slate-900 border-slate-200 shadow-2xl',
+                isArabic ? 'right-0 border-l' : 'left-0 border-r',
               ].join(' ')}
               initial={{ x: isArabic ? 40 : -40, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -301,7 +318,9 @@ export function Sidebar() {
                           isArabic ? 'flex-row-reverse gap-3 text-right' : 'gap-3',
                           isActive
                             ? 'text-white'
-                            : 'text-slate-300 hover:text-white hover:bg-white/10',
+                            : theme === 'dark'
+                              ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                              : 'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50',
                         ].join(' ')}
                       >
                         <item.icon className="w-5 h-5 shrink-0" />

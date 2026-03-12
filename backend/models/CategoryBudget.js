@@ -7,6 +7,7 @@ const categoryBudgetSchema = new mongoose.Schema(
     amount: { type: Number, required: true, min: 0 },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
+    warningThreshold: { type: Number, default: 70, min: 0, max: 100 },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
