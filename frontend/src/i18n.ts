@@ -161,6 +161,7 @@ const resources = {
       "Icon": "Icon",
       "Color": "Color",
       "Save Expense": "Save Expense",
+      "Category Budgets": "Category Budgets",
       "Failed to save expense.": "Failed to save expense."
     }
   },
@@ -317,6 +318,7 @@ const resources = {
       "Add Expense": "إضافة مصروف",
       "New": "جديد",
       "Note (Optional)": "ملاحظة (اختياري)",
+      "Category Budgets": "ميزانيات الفئات",
       "Failed to save expense.": "فشل حفظ المصروف.",
       "Failed to update expense.": "فشل تحديث المصروف.",
       "New Category Name": "اسم الفئة الجديد",

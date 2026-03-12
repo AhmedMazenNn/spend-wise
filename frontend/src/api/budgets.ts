@@ -7,6 +7,34 @@ export interface Budget {
   endDate: string
 }
 
+export interface CategoryBudget {
+  id: string
+  categoryId: string
+  amount: number
+  startDate: string
+  endDate: string
+}
+
+export async function setCategoryBudget(data: {
+  categoryId: string
+  amount: number
+  startDate: string
+  endDate: string
+}): Promise<{ budget: CategoryBudget }> {
+  return apiRequest<{ budget: CategoryBudget }>('/api/category-budgets', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function fetchCategoryBudgets(): Promise<{
+  budgets: CategoryBudget[]
+}> {
+  return apiRequest<{ budgets: CategoryBudget[] }>('/api/category-budgets', {
+    method: 'GET',
+  })
+}
+
 export async function setBudget(data: {
   amount: number
   startDate: string

@@ -255,12 +255,16 @@ async function exportExpenses(req, res, next) {
     );
     const csv = [header, ...rows].join("\n");
 
-    res.setHeader("Content-Type", "text/csv");
+    // Use UTF-16LE with BOM for best Excel compatibility with Arabic
+    const bom = Buffer.from([0xFF, 0xFE]);
+    const csvBuffer = Buffer.from(csv, "utf16le");
+
+    res.setHeader("Content-Type", "text/csv; charset=utf-16le");
     res.setHeader(
       "Content-Disposition",
       `attachment; filename="expenses-${new Date().toISOString().split("T")[0]}.csv"`
     );
-    return res.send(csv);
+    return res.send(Buffer.concat([bom, csvBuffer]));
   } catch (err) {
     next(err);
   }

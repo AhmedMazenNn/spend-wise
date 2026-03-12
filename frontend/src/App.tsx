@@ -13,6 +13,7 @@ import Transactions from './pages/Dashboard/Transactions'
 import { RequireAuth } from './components/RequireAuth'
 import { Settings } from './pages/Dashboard/Settings'
 import { Admin } from './pages/Dashboard/Admin'
+import { CategoryBudgetsPage } from './pages/Dashboard/CategoryBudgets'
 import { RequireAdmin } from './components/RequireAdmin'
 import { NotFound } from './pages/NotFound'
 import { AuthProvider } from './context/AuthContext'
@@ -37,6 +38,7 @@ const App = () => {
               <Route path="/dashboard" element={<Home />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/report" element={<Report />} />
+              <Route path="/category-budgets" element={<CategoryBudgetsPage />} />
               <Route path="/settings" element={<Settings />} />
               <Route element={<RequireAdmin />}>
                 <Route path="/admin" element={<Admin />} />

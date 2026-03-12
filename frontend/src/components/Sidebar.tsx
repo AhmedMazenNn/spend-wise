@@ -35,6 +35,7 @@ export function Sidebar() {
     { name: t('Dashboard'), icon: LayoutDashboard, path: '/dashboard' },
     { name: t('Transactions'), icon: ArrowLeftRight, path: '/transactions' },
     { name: t('Report'), icon: BarChart3, path: '/report' },
+    { name: t('Category Budgets'), icon: LayoutDashboard, path: '/category-budgets' },
     { name: t('Settings'), icon: Settings, path: '/settings' },
     ...(isAdmin ? [{ name: t('Admin'), icon: ShieldCheck, path: '/admin' }] : []),
   ]
