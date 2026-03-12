@@ -17,6 +17,8 @@ import type { Category } from '../../api/categories'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
+import arabicReshaper from 'arabic-reshaper'
+import { arabicFontBase64 } from '../../assets/fonts/arabic-font'
 import {
   AreaChart,
   Area,
@@ -79,6 +81,16 @@ function getPeriodLabel(
       return `${new Date(dateRange.start).toLocaleDateString()} – ${new Date(dateRange.end).toLocaleDateString()}`
     default:
       return ''
+  }
+}
+const fixArabic = (str: any) => {
+  if (typeof str !== 'string' || !str) return str
+  if (!/[\u0600-\u06FF]/.test(str)) return str
+  try {
+    const reshaped = arabicReshaper.reshape(str)
+    return reshaped.split('').reverse().join('')
+  } catch (e) {
+    return str
   }
 }
 
@@ -248,70 +260,85 @@ export function Report() {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       const margin = 20
 
+      // Add Arabic font support
+      doc.addFileToVFS('Amiri-Regular.ttf', arabicFontBase64)
+      doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal', 'Identity-H')
+      
+      // Use the universal Amiri font for the entire report to support mixed content and symbols
+      const fontName = 'Amiri'
+      doc.setFont(fontName, 'normal')
+
       doc.setFontSize(22)
-      doc.setFont('helvetica', 'bold')
-      doc.text(t('Expense Report'), margin, 20)
+      doc.text(fixArabic(t('Expense Report')), isArabic ? 210 - margin : margin, 20, { align: isArabic ? 'right' : 'left' })
+      
       doc.setFontSize(11)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont(fontName, 'normal')
       doc.setTextColor(100, 100, 100)
-      doc.text(periodLabel, margin, 28)
+      doc.text(fixArabic(periodLabel), isArabic ? 210 - margin : margin, 28, { align: isArabic ? 'right' : 'left' })
       doc.setTextColor(0, 0, 0)
 
       doc.setFontSize(10)
       doc.text(
-        `${t('Generated on')} ${new Date().toLocaleDateString(locale, {
+        fixArabic(`${t('Generated on')} ${new Date().toLocaleDateString(locale, {
           year: 'numeric',
           month: 'long',
           day: 'numeric',
-        })}`,
-        margin,
+        })}`),
+        isArabic ? 210 - margin : margin,
         35,
+        { align: isArabic ? 'right' : 'left' }
       )
 
       let y = 45
 
-      doc.setFont('helvetica', 'bold')
+      doc.setFont(fontName, 'normal')
       doc.setFontSize(12)
-      doc.text(t('Summary'), margin, y)
+      doc.text(fixArabic(t('Summary')), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
       y += 8
 
-      doc.setFont('helvetica', 'normal')
+      doc.setFont(fontName, 'normal')
       doc.setFontSize(10)
-      doc.text(`${t('Total Spent')}: $${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`, margin, y)
+      const totalSpentText = `${t('Total Spent')}: $${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`
+      doc.text(fixArabic(totalSpentText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
       y += 6
-      doc.text(`${t('Daily Average')}: $${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`, margin, y)
+      
+      const dailyAvgText = `${t('Daily Average')}: $${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`
+      doc.text(fixArabic(dailyAvgText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
       y += 6
-      doc.text(
-        `${t('Highest Day')}: $${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}${
-          stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString(locale)})` : ''
-        }`,
-        margin,
-        y,
-      )
+      
+      const highestDayText = `${t('Highest Day')}: $${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}${
+        stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString(locale)})` : ''
+      }`
+      doc.text(fixArabic(highestDayText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
       y += 6
-      doc.text(
-        `${t('Top Category')}: ${stats.topCategory ? t(stats.topCategory.name) : '-'}${
-          stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(locale, { minimumFractionDigits: 2 })})` : ''
-        }`,
-        margin,
-        y,
-      )
+
+      const topCategoryText = `${t('Top Category')}: ${stats.topCategory ? t(stats.topCategory.name) : '-'}${
+        stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(locale, { minimumFractionDigits: 2 })})` : ''
+      }`
+      doc.text(fixArabic(topCategoryText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
       y += 15
 
       if (filteredTransactions.length > 0) {
-        doc.setFont('helvetica', 'bold')
+        doc.setFont(fontName, 'normal')
         doc.setFontSize(12)
-        doc.text(t('Transactions'), margin, y)
+        doc.text(fixArabic(t('Transactions')), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
         y += 5
 
         autoTable(doc, {
           startY: y,
-          head: [[t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')]],
-          body: filteredTransactions.map((tx) => [new Date(tx.date).toLocaleDateString(locale), tx.title, t(tx.category), tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 }), tx.note || '']),
+          head: [[t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')].map(fixArabic)],
+          body: filteredTransactions.map((tx) => [
+            fixArabic(new Date(tx.date).toLocaleDateString(locale)),
+            fixArabic(tx.title),
+            fixArabic(t(tx.category)),
+            fixArabic(tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 })),
+            fixArabic(tx.note || '')
+          ]),
           theme: 'striped',
-          headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, font: fontName, halign: isArabic ? 'right' : 'left' },
+          bodyStyles: { font: fontName, halign: isArabic ? 'right' : 'left' },
           margin: { left: margin, right: margin },
-          styles: { fontSize: 9 },
+          styles: { fontSize: 9, font: fontName },
         })
 
         y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
@@ -322,19 +349,20 @@ export function Report() {
           doc.addPage()
           y = 20
         }
-        doc.setFont('helvetica', 'bold')
+        doc.setFont(fontName, 'normal')
         doc.setFontSize(12)
-        doc.text(t('Category Breakdown'), margin, y)
+        doc.text(fixArabic(t('Category Breakdown')), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
         y += 5
 
         autoTable(doc, {
           startY: y,
-          head: [[t('Category'), t('Amount'), t('Percentage')]],
-          body: stats.categoryList.map((cat) => [t(cat.name), cat.amount.toLocaleString(locale, { minimumFractionDigits: 2 }), `${cat.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}%`]),
+          head: [[t('Category'), t('Amount'), t('Percentage')].map(fixArabic)],
+          body: stats.categoryList.map((cat) => [fixArabic(t(cat.name)), fixArabic(cat.amount.toLocaleString(locale, { minimumFractionDigits: 2 })), fixArabic(`${cat.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}%`)]),
           theme: 'striped',
-          headStyles: { fillColor: [16, 185, 129], textColor: 255 },
+          headStyles: { fillColor: [16, 185, 129], textColor: 255, font: fontName, halign: isArabic ? 'right' : 'left' },
+          bodyStyles: { font: fontName, halign: isArabic ? 'right' : 'left' },
           margin: { left: margin, right: margin },
-          styles: { fontSize: 9 },
+          styles: { fontSize: 9, font: fontName },
         })
       }
 
