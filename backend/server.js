@@ -1,7 +1,7 @@
 const cookieParser = require("cookie-parser");
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, ".env") });
-
+const { oauth2Client, getGmailAuthUrl } = require("./config/gmailOAuth");
 const express = require("express");
 const cors = require("cors");
 
@@ -92,7 +92,30 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 7860;
 
 console.log("Swagger paths:", Object.keys(swaggerSpec.paths || {}));
+app.get("/api/auth/gmail/connect", (req, res) => {
+  res.redirect(getGmailAuthUrl());
+});
 
+app.get("/api/auth/gmail/callback", async (req, res) => {
+  try {
+    const { code } = req.query;
+
+    if (!code) {
+      return res.status(400).send("Missing authorization code");
+    }
+
+    const { tokens } = await oauth2Client.getToken(code);
+
+    console.log("GMAIL TOKENS:", tokens);
+
+    return res.send(
+      `Gmail connected successfully. Copy this refresh token and put it in your .env:\n\n${tokens.refresh_token || "No refresh token returned"}`
+    );
+  } catch (err) {
+    console.error("Gmail OAuth callback failed:", err);
+    return res.status(500).send("Failed to connect Gmail");
+  }
+});
 (async () => {
   await connectDb();
   console.log(`*************************************************`);
