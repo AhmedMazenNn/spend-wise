@@ -142,18 +142,32 @@ async function getDashboard(req, res, next) {
           return d >= budgetStart && d <= budgetEnd;
         })
         .reduce((acc, e) => acc + e.amount, 0);
-      const percentage = Math.min((spentInBudget / budget.amount) * 100, 100);
+      const percentage = (spentInBudget / budget.amount) * 100;
       const remaining = budget.amount - spentInBudget;
+      const threshold = (budget.warningThreshold !== undefined && budget.warningThreshold !== null)
+        ? Number(budget.warningThreshold)
+        : 70;
+      const isOver = remaining < 0;
+      const isWarning = !isOver && percentage >= threshold;
+
+      console.log('--- BUDGET DEBUG ---', {
+        id: budget._id,
+        percentage,
+        threshold,
+        isWarning
+      });
 
       activeBudget = {
         id: budget._id,
         amount: budget.amount,
         startDate: budget.startDate,
         endDate: budget.endDate,
+        warningThreshold: threshold,
         spentInBudget,
         percentage,
         remaining,
-        isOver: remaining < 0,
+        isOver,
+        isWarning,
       };
     }
 

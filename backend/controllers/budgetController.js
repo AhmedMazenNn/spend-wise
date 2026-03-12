@@ -6,10 +6,15 @@ const Budget = require("../models/Budget");
 async function setBudget(req, res, next) {
   try {
     const userId = req.user._id;
-    const { amount, startDate, endDate, name } = req.body;
+    const { amount, startDate, endDate, name, warningThreshold } = req.body;
 
     // Deactivate any existing active budget
     await Budget.updateMany({ userId, isActive: true }, { isActive: false });
+
+    console.log('--- SAVING BUDGET ---', {
+      body: req.body,
+      isWarningThresholdDefined: warningThreshold !== undefined
+    });
 
     const budget = await Budget.create({
       userId,
@@ -17,15 +22,21 @@ async function setBudget(req, res, next) {
       startDate: new Date(startDate),
       endDate: new Date(endDate),
       name: name || null,
+      warningThreshold: warningThreshold !== undefined ? Number(warningThreshold) : 70,
       isActive: true,
     });
 
+    console.log('--- BUDGET SAVED ---', {
+      id: budget._id,
+      savedThreshold: budget.warningThreshold
+    });
     return res.status(201).json({
       budget: {
         id: budget._id,
         amount: budget.amount,
         startDate: budget.startDate,
         endDate: budget.endDate,
+        warningThreshold: budget.warningThreshold,
       },
     });
   } catch (err) {
@@ -56,6 +67,7 @@ async function getActiveBudget(req, res, next) {
         amount: budget.amount,
         startDate: budget.startDate,
         endDate: budget.endDate,
+        warningThreshold: budget.warningThreshold || 70,
       },
     });
   } catch (err) {

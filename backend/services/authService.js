@@ -68,7 +68,7 @@ async function signup({ name, email, password, phone }) {
   email = email.toLowerCase().trim();
 
   const existing = await User.findOne({ email });
-
+ Joe
   if (existing) {
     if (!existing.isVerified) {
       const { raw, hash } = generateVerificationToken();

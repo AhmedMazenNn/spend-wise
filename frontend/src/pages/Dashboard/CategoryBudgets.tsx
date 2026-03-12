@@ -8,12 +8,17 @@ import { fetchCategories } from '../../api/categories'
 import type { Category } from '../../api/categories'
 import { setCategoryBudget, fetchCategoryBudgets } from '../../api/budgets'
 import type { CategoryBudget } from '../../api/budgets'
+import { useTranslation } from 'react-i18next'
 
 export function CategoryBudgetsPage() {
   const [loading, setLoading] = useState(true)
   const [categories, setCategories] = useState<Category[]>([])
-  const [categoryBudgets, setCategoryBudgets] = useState<Record<string, number>>({})
+  const [categoryBudgets, setCategoryBudgets] = useState<Record<string, CategoryBudget>>({})
   const [updatingCategory, setUpdatingCategory] = useState<string | null>(null)
+
+  const { t, i18n } = useTranslation()
+  const isArabic = i18n.language === 'ar'
+  const locale = isArabic ? 'ar-EG' : 'en-US'
 
   // Use useExpenseData to get transactions for the current month
   const now = new Date()
@@ -34,9 +39,9 @@ export function CategoryBudgetsPage() {
 
       setCategories(fetchedCats)
       
-      const budgetMap: Record<string, number> = {}
+      const budgetMap: Record<string, CategoryBudget> = {}
       fetchedBudgets.forEach((b: CategoryBudget) => {
-        budgetMap[b.categoryId] = b.amount
+        budgetMap[b.categoryId] = b
       })
       setCategoryBudgets(budgetMap)
     } catch (error) {
@@ -56,6 +61,10 @@ export function CategoryBudgetsPage() {
 
     setUpdatingCategory(categoryName)
     try {
+      // Get existing budget to preserve warningThreshold if not explicitly passed
+      const existingBudget = categoryBudgets[category.id];
+      const warningThreshold = existingBudget?.warningThreshold || 70; // Default to 70 if not set
+
       if (amount === null) {
         // Technically our current backend model doesn't have a "delete/deactivate" for category budget specifically yet
         // but we can set it to 0 or just ignore for now if the user wants to remove it.
@@ -67,6 +76,7 @@ export function CategoryBudgetsPage() {
           amount: 0,
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+          warningThreshold: warningThreshold,
         })
       } else {
         await setCategoryBudget({
@@ -74,6 +84,7 @@ export function CategoryBudgetsPage() {
           amount,
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+          warningThreshold: warningThreshold,
         })
       }
       await loadData()
@@ -108,11 +119,11 @@ export function CategoryBudgetsPage() {
 
     categories.forEach(cat => {
       const budget = categoryBudgets[cat.id]
-      if (budget && budget > 0) {
-        totalBudgeted += budget
+      if (budget?.amount && budget.amount > 0) {
+        totalBudgeted += budget.amount
         const spent = categorySpent[cat.name] || 0
         totalSpentInBudgeted += spent
-        if (spent > budget) {
+        if (spent > budget.amount) {
           overBudgetCount++
         }
       }
@@ -140,9 +151,9 @@ export function CategoryBudgetsPage() {
 
   if (loading || expensesLoading) {
     return (
-      <div className="flex min-h-screen bg-slate-50">
+      <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
         <Sidebar />
-        <main className="flex-1 ml-64 flex items-center justify-center">
+        <main className={`flex-1 ${isArabic ? 'mr-64' : 'ml-64'} flex items-center justify-center`}>
           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
         </main>
       </div>
@@ -150,23 +161,26 @@ export function CategoryBudgetsPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
       <Sidebar />
 
-      <main className="flex-1 ml-64 p-8 overflow-y-auto h-screen">
+      <main 
+        dir={isArabic ? 'rtl' : 'ltr'} 
+        className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+      >
         <motion.div
           initial="hidden"
           animate="visible"
           variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-8 pb-12"
+          className="max-w-7xl mx-auto space-y-8 pb-12 pt-16 lg:pt-0"
         >
           {/* Header */}
-          <motion.header variants={itemVariants}>
-            <h1 className="text-3xl font-bold font-heading text-slate-900">
-              Category Budgets
+          <motion.header variants={itemVariants} className="space-y-1">
+            <h1 className="text-3xl font-bold font-heading text-slate-900 dark:text-white">
+              {t('Category Budgets')}
             </h1>
-            <p className="text-slate-500 mt-1">
-              Set spending limits for each category to stay on track
+            <p className="text-slate-500 dark:text-slate-400 font-medium">
+              {t('Set spending limits for each category to stay on track')}
             </p>
           </motion.header>
 
@@ -175,53 +189,66 @@ export function CategoryBudgetsPage() {
             variants={itemVariants}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            <div className="bg-white rounded-2xl p-6 shadow-card flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
-                <Target className="w-6 h-6" />
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-blue-100/50 dark:shadow-none border border-blue-100/50 dark:border-slate-700/50 hover:border-blue-200 transition-all flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0 shadow-sm">
+                <Target className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Total Budgeted
+                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-1">
+                  {t('Total Budgeted')}
                 </p>
-                <p className="text-2xl font-bold font-heading text-slate-900">
-                  $
-                  {summaries.totalBudgeted.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                  })}
+                <p className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
+                  ${summaries.totalBudgeted.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+                  {t('The sum of all monthly limits you have set across your categories')}
                 </p>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-card flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
-                <TrendingDown className="w-6 h-6" />
+            <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg shadow-emerald-100/50 dark:shadow-none border border-emerald-100/50 dark:border-slate-700/50 hover:border-emerald-200 transition-all flex items-center gap-5">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 shadow-sm">
+                <TrendingDown className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Spent in Budgets
+                <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+                  {t('Spent in Budgets')}
                 </p>
-                <p className="text-2xl font-bold font-heading text-slate-900">
-                  $
-                  {summaries.totalSpentInBudgeted.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                  })}
+                <p className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
+                  ${summaries.totalSpentInBudgeted.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+                  {t('Amount spent so far this month only in categories with an active budget')}
                 </p>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-card flex items-center gap-4">
-              <div
-                className={`w-12 h-12 rounded-full flex items-center justify-center ${summaries.overBudgetCount > 0 ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-600'}`}
-              >
-                <AlertTriangle className="w-6 h-6" />
+            <div className={`bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg transition-all flex items-center gap-5 border ${
+              summaries.overBudgetCount > 0 
+                ? 'shadow-red-50/50 dark:shadow-none border-red-100/50 dark:border-red-900/30 hover:border-red-200' 
+                : 'shadow-slate-100/50 dark:shadow-none border-slate-100/50 dark:border-slate-700/50 hover:border-slate-200'
+            }`}>
+              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                summaries.overBudgetCount > 0 
+                  ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' 
+                  : 'bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400'
+              }`}>
+                <AlertTriangle className="w-7 h-7" />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">
-                  Over Budget
+                <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${
+                  summaries.overBudgetCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'
+                }`}>
+                  {t('Over Budget')}
                 </p>
-                <p className="text-2xl font-bold font-heading text-slate-900">
+                <p className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
                   {summaries.overBudgetCount}{' '}
-                  {summaries.overBudgetCount === 1 ? 'Category' : 'Categories'}
+                  <span className="text-sm font-normal text-slate-500">
+                    {summaries.overBudgetCount === 1 ? t('Category') : t('Categories')}
+                  </span>
+                </p>
+                <p className="text-[11px] text-slate-400 mt-1 leading-tight">
+                  {t('Number of categories where your actual spending has exceeded the set limit')}
                 </p>
               </div>
             </div>
@@ -235,7 +262,7 @@ export function CategoryBudgetsPage() {
             {categories.map((cat) => (
               <div key={cat.id} className="relative">
                 {updatingCategory === cat.name && (
-                  <div className="absolute inset-0 z-10 bg-white/50 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
+                  <div className="absolute inset-0 z-10 bg-white/50 dark:bg-slate-900/50 rounded-2xl flex items-center justify-center backdrop-blur-[1px]">
                     <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
                   </div>
                 )}
@@ -244,7 +271,8 @@ export function CategoryBudgetsPage() {
                   emoji={cat.icon || '📦'}
                   color={cat.color}
                   spent={categorySpent[cat.name] || 0}
-                  budget={categoryBudgets[cat.id] || null}
+                  budget={categoryBudgets[cat.id]?.amount || null}
+                  warningThreshold={categoryBudgets[cat.id]?.warningThreshold || 70}
                   onUpdateBudget={handleUpdateBudget}
                 />
               </div>

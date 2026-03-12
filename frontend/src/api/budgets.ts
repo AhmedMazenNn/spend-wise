@@ -5,6 +5,7 @@ export interface Budget {
   amount: number
   startDate: string
   endDate: string
+  warningThreshold: number
 }
 
 export interface CategoryBudget {
@@ -13,6 +14,7 @@ export interface CategoryBudget {
   amount: number
   startDate: string
   endDate: string
+  warningThreshold: number
 }
 
 export async function setCategoryBudget(data: {
@@ -20,6 +22,7 @@ export async function setCategoryBudget(data: {
   amount: number
   startDate: string
   endDate: string
+  warningThreshold?: number
 }): Promise<{ budget: CategoryBudget }> {
   return apiRequest<{ budget: CategoryBudget }>('/api/category-budgets', {
     method: 'POST',
@@ -40,6 +43,7 @@ export async function setBudget(data: {
   startDate: string
   endDate: string
   name?: string
+  warningThreshold?: number
 }): Promise<{ budget: Budget }> {
   return apiRequest<{ budget: Budget }>('/api/budgets', {
     method: 'POST',

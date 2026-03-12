@@ -33,6 +33,7 @@ import {
   getStoredUser,
 } from '../../api/auth'
 import i18n from '../../i18n'
+import { t } from 'i18next'
 
 type UserRow = User & {
   initials: string
@@ -57,7 +58,8 @@ function formatSignedUp(dateStr?: string) {
   if (!dateStr) return '—'
   const d = new Date(dateStr)
   if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleDateString(undefined, {
+  const locale = i18n.language === 'ar' ? 'ar-EG' : 'en-US'
+  return d.toLocaleDateString(locale, {
     year: 'numeric',
     month: 'short',
     day: '2-digit',
@@ -307,7 +309,7 @@ export function Admin() {
         const [y, m, d] = dateKey.split('-').map(Number)
         const localDate = new Date(y, m - 1, d)
         return {
-          date: localDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+          date: localDate.toLocaleDateString(i18n.language === 'ar' ? 'ar-EG' : 'en-US', { month: 'short', day: 'numeric' }),
           dateKey,
           signups,
         }
@@ -627,7 +629,7 @@ export function Admin() {
                                 type="button"
                                 onClick={() => openEditModal(user)}
                                 className="p-2 text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
-                                title="Edit user"
+                                title={t('Edit user')}
                               >
                                 <Pencil className="w-4 h-4" />
                               </button>
@@ -636,7 +638,7 @@ export function Admin() {
                                 onClick={() => openDeleteModal(user)}
                                 disabled={deletingId === (user.id ?? (user as User & { _id?: string })._id)}
                                 className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors disabled:opacity-50"
-                                title="Delete user"
+                                title={t('Delete user')}
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -775,7 +777,7 @@ export function Admin() {
               >
                 <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-700/50">
                   <h3 className="text-lg font-bold font-heading text-slate-900 dark:text-white">
-                    Delete user
+                    {t('Delete user')}
                   </h3>
                   <button
                     type="button"
@@ -790,11 +792,11 @@ export function Admin() {
 
                 <div className="p-6">
                   <p className="text-sm text-slate-600 dark:text-slate-300">
-                    Are you sure you want to delete{' '}
+                    {t('Are you sure you want to delete')} 
                     <span className="font-semibold text-slate-900 dark:text-white">
                       {deleteTarget.name || deleteTarget.email || 'this user'}
                     </span>
-                    ? This action cannot be undone.
+                    ? {t('This action cannot be undone.')}
                   </p>
 
                   {deleteError && (
