@@ -1,86 +1,57 @@
-# 💸 Spend Wise
+# 💸 SpendWise
 
-Spend Wise is a full-stack personal expense tracking web application that allows users to track their daily spending, filter by custom date ranges, and generate printable PDF reports.
+**Master your money, effortlessly.**
 
-Built with a modern MERN-style architecture.
+SpendWise is a premium, full-stack personal finance management application designed to give you total control over your spending. With a sleek, modern interface and powerful tracking tools, SpendWise makes financial clarity accessible to everyone.
 
----
-
-## 🚀 Tech Stack
-
-### Frontend
-- React
-- TypeScript
-- Axios
-- Modern component-based architecture
-
-### Backend
-- Node.js
-- Express.js
-- MongoDB
-- Mongoose
-- JWT Authentication
-- bcrypt for password hashing
+![Dashboard Preview](https://github.com/AhmedMazenNn/spend-wise/raw/main/preview.png)
 
 ---
 
-## 📂 Project Structure
-spend-wise/
-│
-├── frontend/ # React + TypeScript app
-└── backend/ # Express + MongoDB API
+## ✨ Key Features
 
+### 🚀 Smart Onboarding
+New to the app? Our interactive guided tour walks you through the core features, ensuring you get the most out of SpendWise from day one.
 
----
+### 💰 Expense Tracking
+- **Logging**: record your spending in seconds with custom titles and amounts.
+- **Categorization**: Use beautiful emojis and personalized color-coded categories to see exactly where your money goes.
+- **Detailed Insights**: View your recent transactions with intuitive color-coded icons that match your category choices.
 
-## ✨ Features (Planned & In Progress)
+### 📊 Financial Intelligence
+- **Dynamic Dashboard**: A comprehensive overview of your total balance, monthly spending, and daily averages.
+- **Interactive Charts**: Visualize your spending habits with smooth area charts and detailed pie charts (powered by Recharts).
+- **Recent Activity**: Keep a pulse on your latest transactions with a clean, organized "Recent Expenses" feed.
 
-- User authentication (JWT-based)
-- Add / Edit / Delete expenses
-- Filter expenses by:
-  - Specific day
-  - Specific month
-  - Custom date range
-- Predefined categories with icons
-- Monthly and custom-range PDF reports
-- Admin dashboard (role-based access)
-- Pagination for expenses
-- Mobile-ready REST API
+### 🎯 Budget Management
+- **Smart Limits**: Set monthly budgets and track your progress in real-time.
+- **Visual Warnings**: Adaptive progress bars change colors (emerald to amber to red) as you approach your spending limits.
+- **Bilingual Experience**: Fully localized support for **English (LTR)** and **Arabic (RTL)**, including localized numbers and date formats.
 
----
-
-## ⚙️ Getting Started
-
-### 1️⃣ Clone the repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/spend-wise.git
-cd spend-wise
+### 🔒 Security & Privacy
+- **JWT Authentication**: Secure login and signup with token-based sessions.
+- **Google OAuth**: Fast and secure access using your Google account.
+- **Email Verification**: Built-in verification flow to ensure account security.
+- **Data Integrity**: Powered by MongoDB for reliable data storage and retrieval.
 
 ---
 
-### 2️⃣ Setup Backend
+## 🛠️ Technical Excellence
 
-```bash
-cd backend
-npm install
+SpendWise is built with a state-of-the-art tech stack:
 
-Create a .env file inside backend/:
-
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_secret_key
-CLIENT_URL=http://localhost:3000
-
-Start backend:
-```bash
-npm run dev
+- **Frontend**: React 19, TypeScript, Vite, TailwindCSS 4
+- **Backend**: Node.js, Express.js (v5), MongoDB, Mongoose
+- **Animations**: Framer Motion for a fluid, premium user experience
+- **Icons**: Lucide React for consistent and modern iconography
+- **Internationalization**: React-i18next with full RTL/LTR switching
+- **Reporting**: jspdf and xlsx for professional data exports (PDF/Excel)
 
 ---
 
-### 3️⃣ Setup Frontend
+## 🌎 Global Reach
+SpendWise is designed for a global audience. Whether you prefer a LTR layout or a RTL Arabic interface, the app adapts seamlessly to your language and cultural preferences.
 
-```bash
-cd frontend
-npm install
-npm start
+---
+
+*Developed with passion for financial freedom.*

@@ -60,6 +60,7 @@ function publicUser(user) {
     picture: user.picture,
     isVerified: user.isVerified,
     provider: user.provider,
+    hasSeenOnboarding: !!user.hasSeenOnboarding,
   };
 }
 
@@ -68,7 +69,7 @@ async function signup({ name, email, password, phone }) {
   email = email.toLowerCase().trim();
 
   const existing = await User.findOne({ email });
- Joe
+
   if (existing) {
     if (!existing.isVerified) {
       const { raw, hash } = generateVerificationToken();
@@ -468,6 +469,12 @@ async function googleAuth(idToken, intent = "login") {
   throw err;
 }
 
+// ─── onboarding ──────────────────────────────────────────────────────────────
+
+async function completeOnboarding(userId) {
+  await User.updateOne({ _id: userId }, { $set: { hasSeenOnboarding: true } });
+}
+
 module.exports = {
   signup,
   login,
@@ -478,4 +485,5 @@ module.exports = {
   resetPassword,
   changePassword,
   googleAuth,
+  completeOnboarding,
 };

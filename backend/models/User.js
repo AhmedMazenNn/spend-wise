@@ -19,6 +19,9 @@ const userSchema = new mongoose.Schema(
     // Only the SHA-256 hash of the raw token is stored (never the raw token itself)
     verificationTokenHash: { type: String, default: null },
     verificationTokenExpires: { type: Date, default: null },
+
+    // ─── Onboarding ───────────────────────────────────────────────────────────
+    hasSeenOnboarding: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

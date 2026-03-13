@@ -18,6 +18,7 @@ import { useTranslation } from 'react-i18next'
 
 import Sidebar from '../../components/Sidebar'
 import { AddExpenseModal } from '../../components/AddExpenseModal'
+import Onboarding from '../../components/Onboarding'
 import { useExpenseData, type TimePeriod } from '../../hooks/useExpenseData'
 import { getStoredUser } from '../../api/auth'
 import { setBudget, removeBudget } from '../../api/budgets'
@@ -40,6 +41,7 @@ function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
   const [budgetSaving, setBudgetSaving] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(!user?.hasSeenOnboarding)
 
   const now = new Date()
   const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -192,6 +194,8 @@ function Home() {
   return (
     <div className="flex min-h-screen bg-main">
       <Sidebar />
+
+      {showOnboarding && <Onboarding onComplete={() => setShowOnboarding(false)} />}
 
       <main
         dir={isArabic ? 'rtl' : 'ltr'}
@@ -452,13 +456,13 @@ function Home() {
                             : 'text-slate-500 dark:text-slate-400'
                       }`}
                     >
-                      <span>
+                      <span className='font-bold text-lg'>
                         {budgetStats.percentage.toLocaleString(locale, {
                           maximumFractionDigits: 1,
                         })}
                         % {t('Spent')}
                       </span>
-                      <span>
+                      <span className='font-bold text-lg'>
                         {budgetStats.isOver
                           ? `$${Math.abs(budgetStats.remaining).toLocaleString(locale)} ${t('over')}`
                           : `$${budgetStats.remaining.toLocaleString(locale)} ${t('remaining')}`}
@@ -766,21 +770,11 @@ function Home() {
                 >
                   <div className="flex min-w-0 items-center">
                     <div
-                      className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl ${
-                        tx.category === 'Food'
-                          ? 'bg-orange-100 dark:bg-orange-900/40'
-                          : tx.category === 'Transport'
-                            ? 'bg-blue-100 dark:bg-blue-900/40'
-                            : tx.category === 'Shopping'
-                              ? 'bg-pink-100 dark:bg-pink-900/40'
-                              : tx.category === 'Bills'
-                                ? 'bg-purple-100 dark:bg-purple-900/40'
-                                : tx.category === 'Health'
-                                  ? 'bg-emerald-100 dark:bg-emerald-900/40'
-                                  : tx.category === 'Fun'
-                                    ? 'bg-amber-100 dark:bg-amber-900/40'
-                                    : 'bg-slate-100 dark:bg-slate-700'
-                      }`}
+                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl transition-transform hover:scale-110"
+                      style={{ 
+                        backgroundColor: `${tx.color}20`, // 20% opacity for light bg
+                        border: `1.5px solid ${tx.color}40`
+                      }}
                     >
                       {tx.emoji}
                     </div>
