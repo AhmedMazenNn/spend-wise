@@ -38,7 +38,7 @@ export function CategoryBudgetsPage() {
       ])
 
       setCategories(fetchedCats)
-      
+
       const budgetMap: Record<string, CategoryBudget> = {}
       fetchedBudgets.forEach((b: CategoryBudget) => {
         budgetMap[b.categoryId] = b
@@ -61,22 +61,16 @@ export function CategoryBudgetsPage() {
 
     setUpdatingCategory(categoryName)
     try {
-      // Get existing budget to preserve warningThreshold if not explicitly passed
-      const existingBudget = categoryBudgets[category.id];
-      const warningThreshold = existingBudget?.warningThreshold || 70; // Default to 70 if not set
+      const existingBudget = categoryBudgets[category.id]
+      const warningThreshold = existingBudget?.warningThreshold || 70
 
       if (amount === null) {
-        // Technically our current backend model doesn't have a "delete/deactivate" for category budget specifically yet
-        // but we can set it to 0 or just ignore for now if the user wants to remove it.
-        // For simplicity, let's just set it to 0 if the backend supports it, or handle it as needed.
-        // If the backend doesn't support deleting, we might want to add a deactivate endpoint.
-        // Given setCategoryBudget is POST, we can just send amount: 0 to "unset" it effectively.
-         await setCategoryBudget({
+        await setCategoryBudget({
           categoryId: category.id,
           amount: 0,
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
-          warningThreshold: warningThreshold,
+          warningThreshold,
         })
       } else {
         await setCategoryBudget({
@@ -84,9 +78,10 @@ export function CategoryBudgetsPage() {
           amount,
           startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
           endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
-          warningThreshold: warningThreshold,
+          warningThreshold,
         })
       }
+
       await loadData()
       await refetchExpenses()
     } catch (error) {
@@ -99,8 +94,10 @@ export function CategoryBudgetsPage() {
   // Calculate spent per category using real transactions
   const categorySpent = useMemo(() => {
     const spent: Record<string, number> = {}
-    categories.forEach((c) => (spent[c.name] = 0))
-    
+    categories.forEach((c) => {
+      spent[c.name] = 0
+    })
+
     if (expenseData?.transactions) {
       expenseData.transactions.forEach((tx) => {
         if (spent[tx.category] !== undefined) {
@@ -108,6 +105,7 @@ export function CategoryBudgetsPage() {
         }
       })
     }
+
     return spent
   }, [categories, expenseData])
 
@@ -117,7 +115,7 @@ export function CategoryBudgetsPage() {
     let totalSpentInBudgeted = 0
     let overBudgetCount = 0
 
-    categories.forEach(cat => {
+    categories.forEach((cat) => {
       const budget = categoryBudgets[cat.id]
       if (budget?.amount && budget.amount > 0) {
         totalBudgeted += budget.amount
@@ -153,7 +151,12 @@ export function CategoryBudgetsPage() {
     return (
       <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
         <Sidebar />
-        <main className={`flex-1 ${isArabic ? 'mr-64' : 'ml-64'} flex items-center justify-center`}>
+        <main
+          dir={isArabic ? 'rtl' : 'ltr'}
+          className={`flex-1 w-full min-w-0 ${
+            isArabic ? 'lg:mr-64' : 'lg:ml-64'
+          } flex items-center justify-center p-4`}
+        >
           <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
         </main>
       </div>
@@ -164,9 +167,11 @@ export function CategoryBudgetsPage() {
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
       <Sidebar />
 
-      <main 
-        dir={isArabic ? 'rtl' : 'ltr'} 
-        className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
+      <main
+        dir={isArabic ? 'rtl' : 'ltr'}
+        className={`flex-1 w-full min-w-0 ${
+          isArabic ? 'lg:mr-64' : 'lg:ml-64'
+        } p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
       >
         <motion.div
           initial="hidden"
@@ -223,22 +228,30 @@ export function CategoryBudgetsPage() {
               </div>
             </div>
 
-            <div className={`bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg transition-all flex items-center gap-5 border ${
-              summaries.overBudgetCount > 0 
-                ? 'shadow-red-50/50 dark:shadow-none border-red-100/50 dark:border-red-900/30 hover:border-red-200' 
-                : 'shadow-slate-100/50 dark:shadow-none border-slate-100/50 dark:border-slate-700/50 hover:border-slate-200'
-            }`}>
-              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                summaries.overBudgetCount > 0 
-                  ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400' 
-                  : 'bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400'
-              }`}>
+            <div
+              className={`bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl p-6 shadow-lg transition-all flex items-center gap-5 border ${
+                summaries.overBudgetCount > 0
+                  ? 'shadow-red-50/50 dark:shadow-none border-red-100/50 dark:border-red-900/30 hover:border-red-200'
+                  : 'shadow-slate-100/50 dark:shadow-none border-slate-100/50 dark:border-slate-700/50 hover:border-slate-200'
+              }`}
+            >
+              <div
+                className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                  summaries.overBudgetCount > 0
+                    ? 'bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400'
+                    : 'bg-slate-50 dark:bg-slate-700/30 text-slate-500 dark:text-slate-400'
+                }`}
+              >
                 <AlertTriangle className="w-7 h-7" />
               </div>
               <div>
-                <p className={`text-xs font-bold uppercase tracking-wider mb-1 ${
-                  summaries.overBudgetCount > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'
-                }`}>
+                <p
+                  className={`text-xs font-bold uppercase tracking-wider mb-1 ${
+                    summaries.overBudgetCount > 0
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                >
                   {t('Over Budget')}
                 </p>
                 <p className="text-2xl font-bold font-heading text-slate-900 dark:text-white">
