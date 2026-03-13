@@ -38,6 +38,13 @@ export async function fetchCategoryBudgets(): Promise<{
   })
 }
 
+export async function removeCategoryBudget(categoryId: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>(`/api/category-budgets`, {
+    method: 'DELETE',
+    body: JSON.stringify({ categoryId }),
+  })
+}
+
 export async function setBudget(data: {
   amount: number
   startDate: string

@@ -6,7 +6,11 @@ import { useExpenseData } from '../../hooks/useExpenseData'
 import { Target, TrendingDown, AlertTriangle, Loader2 } from 'lucide-react'
 import { fetchCategories } from '../../api/categories'
 import type { Category } from '../../api/categories'
-import { setCategoryBudget, fetchCategoryBudgets } from '../../api/budgets'
+import {
+  setCategoryBudget,
+  fetchCategoryBudgets,
+  removeCategoryBudget,
+} from '../../api/budgets'
 import type { CategoryBudget } from '../../api/budgets'
 import { useTranslation } from 'react-i18next'
 
@@ -20,9 +24,9 @@ export function CategoryBudgetsPage() {
   const isArabic = i18n.language === 'ar'
   const locale = isArabic ? 'ar-EG' : 'en-US'
 
-  // Use useExpenseData to get transactions for the current month
   const now = new Date()
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
   const { data: expenseData, loading: expensesLoading, refetch: refetchExpenses } = useExpenseData(
     'preset',
     'Month',
@@ -60,30 +64,20 @@ export function CategoryBudgetsPage() {
     if (!category) return
 
     setUpdatingCategory(categoryName)
+
     try {
       const existingBudget = categoryBudgets[category.id]
       const warningThreshold = existingBudget?.warningThreshold || 70
 
-      if (amount === null) {
-        await setCategoryBudget({
-          categoryId: category.id,
-          amount: 0,
-          startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-          endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
-          warningThreshold,
-        })
-      } else {
-        await setCategoryBudget({
-          categoryId: category.id,
-          amount,
-          startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-          endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
-          warningThreshold,
-        })
-      }
+      await setCategoryBudget({
+        categoryId: category.id,
+        amount: amount ?? 0,
+        startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
+        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+        warningThreshold,
+      })
 
-      await loadData()
-      await refetchExpenses()
+      await Promise.all([loadData(), refetchExpenses()])
     } catch (error) {
       console.error('Failed to update category budget:', error)
     } finally {
@@ -91,9 +85,25 @@ export function CategoryBudgetsPage() {
     }
   }
 
-  // Calculate spent per category using real transactions
+  const handleRemoveBudget = async (categoryName: string) => {
+    const category = categories.find((c) => c.name === categoryName)
+    if (!category) return
+
+    setUpdatingCategory(categoryName)
+
+    try {
+      await removeCategoryBudget(category.id)
+      await Promise.all([loadData(), refetchExpenses()])
+    } catch (error) {
+      console.error('Failed to remove category budget:', error)
+    } finally {
+      setUpdatingCategory(null)
+    }
+  }
+
   const categorySpent = useMemo(() => {
     const spent: Record<string, number> = {}
+
     categories.forEach((c) => {
       spent[c.name] = 0
     })
@@ -109,7 +119,6 @@ export function CategoryBudgetsPage() {
     return spent
   }, [categories, expenseData])
 
-  // Calculate summaries
   const summaries = useMemo(() => {
     let totalBudgeted = 0
     let totalSpentInBudgeted = 0
@@ -117,10 +126,12 @@ export function CategoryBudgetsPage() {
 
     categories.forEach((cat) => {
       const budget = categoryBudgets[cat.id]
+
       if (budget?.amount && budget.amount > 0) {
         totalBudgeted += budget.amount
         const spent = categorySpent[cat.name] || 0
         totalSpentInBudgeted += spent
+
         if (spent > budget.amount) {
           overBudgetCount++
         }
@@ -179,7 +190,6 @@ export function CategoryBudgetsPage() {
           variants={containerVariants}
           className="max-w-7xl mx-auto space-y-8 pb-12 pt-16 lg:pt-0"
         >
-          {/* Header */}
           <motion.header variants={itemVariants} className="space-y-1">
             <h1 className="text-3xl font-bold font-heading text-slate-900 dark:text-white">
               {t('Category Budgets')}
@@ -189,7 +199,6 @@ export function CategoryBudgetsPage() {
             </p>
           </motion.header>
 
-          {/* Summary Cards */}
           <motion.div
             variants={itemVariants}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
@@ -267,7 +276,6 @@ export function CategoryBudgetsPage() {
             </div>
           </motion.div>
 
-          {/* Budget Cards Grid */}
           <motion.div
             variants={itemVariants}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -279,6 +287,7 @@ export function CategoryBudgetsPage() {
                     <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
                   </div>
                 )}
+
                 <CategoryBudgetCard
                   category={cat.name}
                   emoji={cat.icon || '📦'}
@@ -287,6 +296,7 @@ export function CategoryBudgetsPage() {
                   budget={categoryBudgets[cat.id]?.amount || null}
                   warningThreshold={categoryBudgets[cat.id]?.warningThreshold || 70}
                   onUpdateBudget={handleUpdateBudget}
+                  onRemoveBudget={handleRemoveBudget}
                 />
               </div>
             ))}

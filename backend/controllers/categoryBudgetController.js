@@ -72,4 +72,24 @@ async function getCategoryBudgets(req, res, next) {
   }
 }
 
-module.exports = { setCategoryBudget, getCategoryBudgets };
+//Remove Category Budget
+async function removeCategoryBudget(req, res, next) {
+  try {
+    const userId = req.user._id;
+    const { categoryId } = req.body;
+    if (!categoryId) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    await CategoryBudget.updateMany(
+      { userId, categoryId, isActive: true },
+      { isActive: false }
+    );
+
+    return res.status(200).json({ message: "Category budget removed successfully" });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { setCategoryBudget, getCategoryBudgets, removeCategoryBudget };

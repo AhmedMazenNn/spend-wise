@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const { setCategoryBudget, getCategoryBudgets } = require("../controllers/categoryBudgetController");
+const { setCategoryBudget, getCategoryBudgets, removeCategoryBudget } = require("../controllers/categoryBudgetController");
 const auth = require("../middlewares/auth");
 
 /**
@@ -41,5 +41,26 @@ router.post("/", auth, setCategoryBudget);
  *       - bearerAuth: []
  */
 router.get("/", auth, getCategoryBudgets);
+
+/**
+ * @swagger
+ * /api/category-budgets:
+ *   delete:
+ *     summary: Remove a category budget
+ *     tags: [Category Budgets]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [categoryId]
+ *             properties:
+ *               categoryId:
+ *                 type: string
+ */
+router.delete("/", auth, removeCategoryBudget);
 
 module.exports = router;
