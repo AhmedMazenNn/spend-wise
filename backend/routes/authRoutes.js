@@ -12,6 +12,7 @@ const {
   resetPassword,
   changePassword,
   googleAuth,
+  completeOnboarding,
 } = require("../controllers/authController");
 const {
   signupValidator,
@@ -302,5 +303,19 @@ router.post("/change-password", auth, changePasswordValidator, validate, changeP
  *         description: Account already exists (register intent)
  */
 router.post("/google", googleAuth);
+
+/**
+ * @swagger
+ * /api/auth/onboarding:
+ *   patch:
+ *     summary: Mark onboarding as seen
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Onboarding status updated
+ */
+router.patch("/onboarding", auth, completeOnboarding);
 
 module.exports = router;

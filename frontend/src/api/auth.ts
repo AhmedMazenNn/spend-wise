@@ -13,6 +13,7 @@ export interface User {
   isVerified?: boolean
   provider?: string
   createdAt?: string
+  hasSeenOnboarding?: boolean
 }
 
 interface AuthResponse {
@@ -353,4 +354,24 @@ export async function deleteUserByAdmin(userId: string) {
   const token = getToken()
   if (!token) throw new Error('Not authenticated')
   return request<{ message: string }>(`/api/users/${userId}`, { method: 'DELETE' }, token)
+}
+
+export async function completeOnboarding(): Promise<{ message: string }> {
+  const token = getToken()
+  if (!token) throw new Error('Not authenticated')
+
+  const res = await request<{ message: string }>(
+    '/api/auth/onboarding',
+    { method: 'PATCH' },
+    token,
+  )
+
+  // Update local storage user object
+  const user = getStoredUser()
+  if (user) {
+    user.hasSeenOnboarding = true
+    localStorage.setItem(USER_KEY, JSON.stringify(user))
+  }
+
+  return res
 }

@@ -67,8 +67,11 @@ export function Login() {
     }
   }
 
-  const getInputClass = (fieldName: string) => {
-    const base = `w-full ${isArabic ? 'pr-12 pl-4 text-right' : 'pl-12 pr-4 text-left'} py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white`
+  const getInputClass = (fieldName: string, hasEndIcon = false) => {
+    const base = `w-full ${isArabic 
+      ? `pr-12 ${hasEndIcon ? 'pl-11' : 'pl-4'} text-right` 
+      : `pl-12 ${hasEndIcon ? 'pr-11' : 'pr-4'} text-left`
+    } py-3.5 rounded-xl bg-slate-50 dark:bg-slate-800 border outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all text-slate-900 dark:text-white`
     if (fieldErrors[fieldName]) {
       return `${base} border-red-500 dark:border-red-500 ring-red-100 dark:ring-red-900/20`
     }
@@ -152,7 +155,7 @@ export function Login() {
                       required
                       value={formData.password}
                       onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className={getInputClass('password')}
+                      className={getInputClass('password', true)}
                       placeholder={t('Password')}
                     />
                     <button

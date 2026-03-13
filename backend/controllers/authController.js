@@ -195,6 +195,16 @@ async function googleAuth(req, res, next) {
   }
 }
 
+// ─── onboarding ──────────────────────────────────────────────────────────────
+async function completeOnboarding(req, res, next) {
+  try {
+    await authService.completeOnboarding(req.user._id);
+    return res.status(200).json({ message: "Onboarding completed" });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   signup,
   login,
@@ -207,4 +217,5 @@ module.exports = {
   resetPassword,
   changePassword,
   googleAuth,
+  completeOnboarding,
 };

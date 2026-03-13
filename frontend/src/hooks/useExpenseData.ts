@@ -37,7 +37,9 @@ export function useExpenseData(
     stats: { totalSpent: number; count: number; dailyAvg: number; highest: number; topCategory: string | null }
     dailySpending: { date: string; amount: number }[]
     categoryData: { name: string; value: number; color: string }[]
-    transactions: { id: string; amount: number; title: string; category: string; date: string; emoji: string }[]
+    transactions: {
+      color: any; id: string; amount: number; title: string; category: string; date: string; emoji: string
+}[]
     activeBudget: Budget | null
     budgetStats: BudgetStats | null
   } | null>(null)

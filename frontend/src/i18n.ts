@@ -233,7 +233,21 @@ const resources = {
       "Password must be at least 8 characters": "Password must be at least 8 characters",
       "Password must contain uppercase, lowercase, number and special character": "Password must contain uppercase, lowercase, number and special character",
       "Passwords do not match": "Passwords do not match",
-      "e.g., Password123!": "e.g., Password123!"
+      "e.g., Password123!": "e.g., Password123!",
+      "Welcome to SpendWise!": "Welcome to SpendWise!",
+      "Let's get you started with a quick tour of your new financial companion.": "Let's get you started with a quick tour of your new financial companion.",
+      "Track Every Expense": "Track Every Expense",
+      "Log your spending in seconds. Categorize with emojis and keep notes for better clarity.": "Log your spending in seconds. Categorize with emojis and keep notes for better clarity.",
+      "Smart Budgets": "Smart Budgets",
+      "Set monthly limits and watch the progress bar change colors as you reach your goals.": "Set monthly limits and watch the progress bar change colors as you reach your goals.",
+      "Insights & Reports": "Insights & Reports",
+      "Beautiful charts show exactly where your money goes. Export to PDF or Excel anytime.": "Beautiful charts show exactly where your money goes. Export to PDF or Excel anytime.",
+      "How to use": "How to use",
+      "Click the '+' button to add an expense. Go to 'Budgets' to set limits. Use the Dashboard for a quick summary.": "Click the '+' button to add an expense. Go to 'Budgets' to set limits. Use the Dashboard for a quick summary.",
+      "Start Your Journey": "Start Your Journey",
+      "Next": "Next",
+      "Skip Tour": "Skip Tour",
+      "Get Started": "Get Started"
     }
   },
   ar: {
@@ -467,6 +481,24 @@ const resources = {
       "Passwords do not match": "كلمات المرور غير متطابقة",
       "e.g., Password123!": "مثال: Password123!",
       "Delete user": "حذف المستخدم",
+      "Welcome to SpendWise!": "أهلاً بك في SpendWise!",
+      "Let's get you started with a quick tour of your new financial companion.": "دعنا نبدأ بجولة سريعة في رفيقك المالي الجديد.",
+      "Next": "التالي",
+      "Skip Tour": "تخطي الجولة",
+      "Previous": "السابق",
+      "Finish": "إنهاء",
+      "Track Every Expense": "تتبع كل مصروف",
+      "Smart Budgets": "الميزانيات الذكية",
+      "Insights & Reports": "الرؤى والتقارير",
+      "How to use": "كيفية الاستخدام",
+      "Get Started": "ابدأ",
+      "Click the '+' button to add an expense. Go to 'Budgets' to set limits. Use the Dashboard for a quick summary.": "اضغط على زر '+' لإضافة مصروف. اذهب إلى 'الميزانيات' لتعيين الحدود. استخدم لوحة التحكم للحصول على ملخص سريع.",
+      "Beautiful charts show exactly where your money goes. Export to PDF or Excel anytime.": "رسوم بيانية جميلة توضح بالضبط أين تذهب أموالك. يمكنك التصدير إلى PDF أو Excel في أي وقت.",
+      "Set monthly limits and watch the progress bar change colors as you reach your goals.": "ضع حدودًا شهرية وشاهد شريط التقدم يتغير لونه أثناء تحقيق أهدافك.",
+      "Log your spending in seconds. Categorize with emojis and keep notes for better clarity.": "سجل نفقاتك في ثوانٍ. صنفها باستخدام الرموز التعبيرية واحتفظ بالملاحظات لتحسين الوضوح.",
+      "Track your spending, set budgets, and reach your financial goals.": "تتبع نفقاتك، وضع الميزانيات، وحقق أهدافك المالية.",
+      "Add your first expense to get started.": "أضف مصروفك الأول للبدء.",
+      "You're all set! You can now explore your dashboard and manage your finances.": "تم الإعداد! يمكنك الآن استكشاف لوحة التحكم وإدارة أموالك.",
       
     }
   }

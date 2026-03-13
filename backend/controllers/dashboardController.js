@@ -119,6 +119,7 @@ async function getDashboard(req, res, next) {
       amount: e.amount,
       title: e.title,
       category: e.categoryId?.name || "Uncategorized",
+      color: e.categoryId?.color || "#94A3B8",
       date: new Date(e.date).toISOString().split("T")[0],
       emoji: e.categoryId?.icon || "📦",
     }));

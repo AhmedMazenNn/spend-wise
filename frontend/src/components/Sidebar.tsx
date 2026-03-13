@@ -51,6 +51,7 @@ export function Sidebar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [logoutError, setLogoutError] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [imageLoadError, setImageLoadError] = useState(false)
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -199,8 +200,13 @@ export function Sidebar() {
               isArabic ? 'flex-row-reverse text-right' : '',
             ].join(' ')}
           >
-            {user?.picture ? (
-              <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+            {user?.picture && !imageLoadError ? (
+              <img 
+                src={user.picture} 
+                alt="Profile" 
+                className="w-10 h-10 rounded-full object-cover" 
+                onError={() => setImageLoadError(true)}
+              />
             ) : (
               <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
                 {initials}
@@ -357,8 +363,13 @@ export function Sidebar() {
                     isArabic ? 'flex-row-reverse text-right' : '',
                   ].join(' ')}
                 >
-                  {user?.picture ? (
-                    <img src={user.picture} alt="Profile" className="w-10 h-10 rounded-full object-cover" />
+                  {user?.picture && !imageLoadError ? (
+                    <img 
+                      src={user.picture} 
+                      alt="Profile" 
+                      className="w-10 h-10 rounded-full object-cover" 
+                      onError={() => setImageLoadError(true)}
+                    />
                   ) : (
                     <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-sm">
                       {initials}

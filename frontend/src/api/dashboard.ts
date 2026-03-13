@@ -19,6 +19,7 @@ export interface DashboardResponse {
     amount: number
     title: string
     category: string
+    color: string
     date: string
     emoji: string
   }[]
