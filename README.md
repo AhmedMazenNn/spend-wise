@@ -4,7 +4,7 @@
 
 SpendWise is a premium, full-stack personal finance management application designed to give you total control over your spending. With a sleek, modern interface and powerful tracking tools, SpendWise makes financial clarity accessible to everyone.
 
-![Dashboard Preview](https://github.com/AhmedMazenNn/spend-wise/raw/main/preview.png)
+![Dashboard Preview](preview.png)
 
 ---
 
@@ -17,6 +17,10 @@ New to the app? Our interactive guided tour walks you through the core features,
 - **Logging**: record your spending in seconds with custom titles and amounts.
 - **Categorization**: Use beautiful emojis and personalized color-coded categories to see exactly where your money goes.
 - **Detailed Insights**: View your recent transactions with intuitive color-coded icons that match your category choices.
+
+![Add Expense Preview](add-expense.png)
+
+---
 
 ### 📊 Financial Intelligence
 - **Dynamic Dashboard**: A comprehensive overview of your total balance, monthly spending, and daily averages.
@@ -33,6 +37,12 @@ New to the app? Our interactive guided tour walks you through the core features,
 - **Google OAuth**: Fast and secure access using your Google account.
 - **Email Verification**: Built-in verification flow to ensure account security.
 - **Data Integrity**: Powered by MongoDB for reliable data storage and retrieval.
+
+![Sign In Preview](sign-in.png)
+
+---
+
+![Sign Up Preview](sign-up.png)
 
 ---
 
