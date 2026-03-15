@@ -59,21 +59,24 @@ export function CategoryBudgetsPage() {
     loadData()
   }, [loadData])
 
-  const handleUpdateBudget = async (categoryName: string, amount: number | null) => {
+  const handleUpdateBudget = async (
+    categoryName: string,
+    amount: number | null,
+    startDate: string,
+    endDate: string,
+    warningThreshold: number
+  ) => {
     const category = categories.find((c) => c.name === categoryName)
     if (!category) return
 
     setUpdatingCategory(categoryName)
 
     try {
-      const existingBudget = categoryBudgets[category.id]
-      const warningThreshold = existingBudget?.warningThreshold || 70
-
       await setCategoryBudget({
         categoryId: category.id,
         amount: amount ?? 0,
-        startDate: new Date(now.getFullYear(), now.getMonth(), 1).toISOString(),
-        endDate: new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString(),
+        startDate,
+        endDate,
         warningThreshold,
       })
 
@@ -295,6 +298,8 @@ export function CategoryBudgetsPage() {
                   spent={categorySpent[cat.name] || 0}
                   budget={categoryBudgets[cat.id]?.amount || null}
                   warningThreshold={categoryBudgets[cat.id]?.warningThreshold || 70}
+                  startDate={categoryBudgets[cat.id]?.startDate || null}
+                  endDate={categoryBudgets[cat.id]?.endDate || null}
                   onUpdateBudget={handleUpdateBudget}
                   onRemoveBudget={handleRemoveBudget}
                 />

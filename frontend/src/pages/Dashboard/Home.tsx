@@ -41,6 +41,8 @@ function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
   const [budgetSaving, setBudgetSaving] = useState(false)
+  const [budgetError, setBudgetError] = useState<string | null>(null)
+  const [showExpiryConfirm, setShowExpiryConfirm] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(!user?.hasSeenOnboarding)
 
   const now = new Date()
@@ -57,7 +59,7 @@ function Home() {
   const [tempBudget, setTempBudget] = useState({
     amount: 1000,
     startDate: new Date().toISOString().split('T')[0],
-    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1))
+    endDate: new Date(new Date().setDate(new Date().getDate() + 30))
       .toISOString()
       .split('T')[0],
     warningThreshold: 70,
@@ -75,6 +77,26 @@ function Home() {
   }
 
   const handleSaveBudget = async () => {
+    setBudgetError(null)
+    const startD = new Date(tempBudget.startDate)
+    const endD = new Date(tempBudget.endDate)
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    if (tempBudget.amount <= 0) {
+      setBudgetError(t('Please enter a valid budget amount'))
+      return
+    }
+
+    if (startD > endD) {
+      setBudgetError(t('Start date cannot be after end date'))
+      return
+    }
+
+    if (endD < today && !showExpiryConfirm) {
+      setShowExpiryConfirm(true)
+      return
+    }
+
     setBudgetSaving(true)
     try {
       await setBudget({
@@ -86,9 +108,10 @@ function Home() {
       setIsBudgetModalOpen(false)
       refetch()
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to save budget')
+      setBudgetError(e instanceof Error ? e.message : t('Failed to save budget'))
     } finally {
       setBudgetSaving(false)
+      setShowExpiryConfirm(false)
     }
   }
 
@@ -97,7 +120,8 @@ function Home() {
       await removeBudget(id)
       refetch()
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Failed to remove budget')
+      // In a real app we might use a toast here. For now we just log it or could add another state
+      console.error(e)
     }
   }
 
@@ -153,11 +177,17 @@ function Home() {
   const budget = data?.activeBudget ?? null
   const budgetStats = data?.budgetStats ?? null
 
-  const budgetStatus = budgetStats?.isOver
-    ? 'over'
-    : budgetStats?.isWarning
-      ? 'warning'
-      : 'normal'
+  const nowOnlyDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const budgetEndDate = budget?.endDate ? new Date(budget.endDate) : null
+  const isExpired = budgetEndDate !== null && budgetEndDate < nowOnlyDate
+
+  const budgetStatus = isExpired
+    ? 'expired'
+    : budgetStats?.isOver
+      ? 'over'
+      : budgetStats?.isWarning
+        ? 'warning'
+        : 'normal'
 
   const progressWidth = budgetStats
     ? `${Math.min(Math.max(budgetStats.percentage, 0), 100)}%`
@@ -235,16 +265,18 @@ function Home() {
                     warningThreshold: budget.warningThreshold ?? 70,
                   })
                 } else {
-                  setTempBudget({
-                    amount: 1000,
-                    startDate: new Date().toISOString().split('T')[0],
-                    endDate: new Date(new Date().setMonth(new Date().getMonth() + 1))
-                      .toISOString()
-                      .split('T')[0],
-                    warningThreshold: 70,
-                  })
-                }
-                setIsBudgetModalOpen(true)
+                    setTempBudget({
+                      amount: 1000,
+                      startDate: new Date().toISOString().split('T')[0],
+                      endDate: new Date(new Date().setDate(new Date().getDate() + 30))
+                        .toISOString()
+                        .split('T')[0],
+                      warningThreshold: 70,
+                    })
+                  }
+                  setBudgetError(null)
+                  setShowExpiryConfirm(false)
+                  setIsBudgetModalOpen(true)
               }}
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 font-medium text-slate-700 dark:text-slate-200 shadow-sm transition-colors hover:bg-slate-50 dark:hover:bg-slate-700"
             >
@@ -343,20 +375,24 @@ function Home() {
               >
                 <div
                   className={`relative overflow-hidden rounded-2xl border p-5 text-slate-900 shadow-lg sm:p-6 dark:text-white ${
-                    budgetStatus === 'over'
-                      ? 'border-red-200 ring-2 ring-red-500/30 dark:border-red-500/20 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800'
-                      : budgetStatus === 'warning'
-                        ? 'border-orange-300 ring-2 ring-orange-500/50 bg-orange-50 dark:bg-orange-500/10 dark:border-orange-500/30'
-                        : 'border-slate-200 dark:border-slate-700/50 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800'
+                    budgetStatus === 'expired'
+                      ? 'bg-slate-50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 opacity-80'
+                      : budgetStatus === 'over'
+                        ? 'border-red-200 ring-2 ring-red-500/30 dark:border-red-500/20 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800'
+                        : budgetStatus === 'warning'
+                          ? 'border-orange-300 ring-2 ring-orange-500/50 bg-orange-50 dark:bg-orange-500/10 dark:border-orange-500/30'
+                          : 'border-slate-200 dark:border-slate-700/50 bg-white dark:bg-gradient-to-r dark:from-slate-900 dark:to-slate-800'
                   }`}
                 >
                   <div
                     className={`pointer-events-none absolute top-0 right-0 -mr-16 -mt-16 rounded-full p-32 blur-3xl ${
-                      budgetStatus === 'over'
-                        ? 'bg-red-200/40 dark:bg-red-500/10'
-                        : budgetStatus === 'warning'
-                          ? 'bg-orange-200/40 dark:bg-orange-500/10'
-                          : 'bg-slate-200/40 dark:bg-white/5'
+                      budgetStatus === 'expired'
+                        ? 'bg-slate-300/20 dark:bg-slate-500/5'
+                        : budgetStatus === 'over'
+                          ? 'bg-red-200/40 dark:bg-red-500/10'
+                          : budgetStatus === 'warning'
+                            ? 'bg-orange-200/40 dark:bg-orange-500/10'
+                            : 'bg-slate-200/40 dark:bg-white/5'
                     }`}
                   />
 
@@ -378,21 +414,25 @@ function Home() {
                       <div className="flex items-center gap-2">
                         <div
                           className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${
-                            budgetStatus === 'over'
-                              ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-500/50 dark:bg-red-500/20 dark:text-red-200'
-                              : budgetStatus === 'warning'
-                                ? 'border-orange-300 bg-orange-100 text-orange-700 dark:border-orange-500/50 dark:bg-orange-500/20 dark:text-orange-200'
-                                : 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/20 dark:text-emerald-200'
+                            budgetStatus === 'expired'
+                              ? 'border-slate-300 bg-slate-100 text-slate-700 dark:border-slate-500/50 dark:bg-slate-500/20 dark:text-slate-200'
+                              : budgetStatus === 'over'
+                                ? 'border-red-300 bg-red-100 text-red-700 dark:border-red-500/50 dark:bg-red-500/20 dark:text-red-200'
+                                : budgetStatus === 'warning'
+                                  ? 'border-orange-300 bg-orange-100 text-orange-700 dark:border-orange-500/50 dark:bg-orange-500/20 dark:text-orange-200'
+                                  : 'border-emerald-300 bg-emerald-100 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/20 dark:text-emerald-200'
                           }`}
                         >
-                          {(budgetStatus === 'over' || budgetStatus === 'warning') && (
+                          {(budgetStatus === 'over' || budgetStatus === 'warning' || budgetStatus === 'expired') && (
                             <AlertTriangle className="h-3.5 w-3.5" />
                           )}
-                          {budgetStatus === 'over'
-                            ? t('over')
-                            : budgetStatus === 'warning'
-                              ? t('warning')
-                              : t('remaining')}
+                          {budgetStatus === 'expired'
+                            ? t('Expired')
+                            : budgetStatus === 'over'
+                              ? t('over')
+                              : budgetStatus === 'warning'
+                                ? t('warning')
+                                : t('remaining')}
                         </div>
 
                         {budget.id && (
@@ -426,11 +466,13 @@ function Home() {
 
                     <div
                       className={`mb-2 h-3 w-full overflow-hidden rounded-full ${
-                        budgetStatus === 'over'
-                          ? 'bg-red-100 dark:bg-red-950/40'
-                          : budgetStatus === 'warning'
-                            ? 'bg-orange-100 dark:bg-orange-950/40'
-                            : 'bg-slate-200 dark:bg-slate-700'
+                        budgetStatus === 'expired'
+                          ? 'bg-slate-200 dark:bg-slate-700 opacity-50'
+                          : budgetStatus === 'over'
+                            ? 'bg-red-100 dark:bg-red-950/40'
+                            : budgetStatus === 'warning'
+                              ? 'bg-orange-100 dark:bg-orange-950/40'
+                              : 'bg-slate-200 dark:bg-slate-700'
                       }`}
                     >
                       <motion.div
@@ -438,22 +480,26 @@ function Home() {
                         animate={{ width: progressWidth }}
                         transition={{ duration: 1, ease: 'easeOut' }}
                         className={`h-full rounded-full ${
-                          budgetStatus === 'over'
-                            ? 'bg-red-500'
-                            : budgetStatus === 'warning'
-                              ? 'bg-orange-500'
-                              : 'bg-emerald-500'
+                          budgetStatus === 'expired'
+                            ? 'bg-slate-400'
+                            : budgetStatus === 'over'
+                              ? 'bg-red-500'
+                              : budgetStatus === 'warning'
+                                ? 'bg-orange-500'
+                                : 'bg-emerald-500'
                         }`}
                       />
                     </div>
 
                     <div
                       className={`flex flex-col gap-1 text-xs sm:flex-row sm:justify-between ${
-                        budgetStatus === 'over'
-                          ? 'text-red-600 dark:text-red-300'
-                          : budgetStatus === 'warning'
-                            ? 'text-orange-600 dark:text-orange-300'
-                            : 'text-slate-500 dark:text-slate-400'
+                        budgetStatus === 'expired'
+                          ? 'text-slate-500 dark:text-slate-400'
+                          : budgetStatus === 'over'
+                            ? 'text-red-600 dark:text-red-300'
+                            : budgetStatus === 'warning'
+                              ? 'text-orange-600 dark:text-orange-300'
+                              : 'text-slate-500 dark:text-slate-400'
                       }`}
                     >
                       <span className='font-bold text-lg'>
@@ -463,13 +509,15 @@ function Home() {
                         % {t('Spent')}
                       </span>
                       <span className='font-bold text-lg'>
-                        {budgetStats.isOver
-                          ? `$${Math.abs(budgetStats.remaining).toLocaleString(locale)} ${t('over')}`
-                          : `$${budgetStats.remaining.toLocaleString(locale)} ${t('remaining')}`}
+                        {budgetStatus === 'expired'
+                          ? t('Period ended')
+                          : budgetStats.isOver
+                            ? `$${Math.abs(budgetStats.remaining).toLocaleString(locale)} ${t('over')}`
+                            : `$${budgetStats.remaining.toLocaleString(locale)} ${t('remaining')}`}
                       </span>
                     </div>
 
-                    {budgetStats.isWarning && !budgetStats.isOver && (
+                    {budgetStats.isWarning && !budgetStats.isOver && !isExpired && (
                       <motion.div
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -479,6 +527,19 @@ function Home() {
                         <span>
                           {t('Warning: You have reached')} {budget.warningThreshold}%{' '}
                           {t('of your budget')}
+                        </span>
+                      </motion.div>
+                    )}
+
+                    {isExpired && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-3 flex items-center gap-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-2 text-[10px] text-slate-500 dark:text-slate-400 sm:text-xs"
+                      >
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                        <span>
+                          {t('Budget period has ended. New expenses are not tracked for this limit.')}
                         </span>
                       </motion.div>
                     )}
@@ -570,7 +631,7 @@ function Home() {
                     {t('Top Category')}
                   </span>
                   <span className="max-w-[10rem] truncate text-xl font-bold text-emerald-600 sm:max-w-none">
-                    {stats.topCategory ? t(stats.topCategory) : t('N/A')}
+                    {stats.topCategory ? t(stats.topCategory) : t('None')}
                   </span>
                 </div>
               </div>
@@ -959,12 +1020,55 @@ function Home() {
                       </p>
                     </div>
 
+                    <AnimatePresence>
+                      {budgetError && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-xl p-3 flex items-start gap-2"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+                          <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                            {budgetError}
+                          </p>
+                        </motion.div>
+                      )}
+
+                      {showExpiryConfirm && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/20 rounded-xl p-3 flex items-start gap-2"
+                        >
+                          <AlertTriangle className="w-4 h-4 text-orange-600 mt-0.5 shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs font-bold text-orange-700 dark:text-orange-400">
+                              {t('Date Warning')}
+                            </p>
+                            <p className="text-[10px] text-orange-600 dark:text-orange-300">
+                              {t('The end date has already passed. This budget will be marked as expired. Continue?')}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
                     <button
                       onClick={handleSaveBudget}
                       disabled={budgetSaving}
-                      className="mt-4 w-full rounded-xl bg-emerald-600 py-3 font-semibold text-white shadow-lg shadow-emerald-200 transition-colors hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50 dark:shadow-emerald-900/20"
+                      className={`mt-4 w-full rounded-xl py-3 font-semibold text-white shadow-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+                        showExpiryConfirm 
+                          ? 'bg-orange-600 hover:bg-orange-700 shadow-orange-200 dark:shadow-orange-900/20' 
+                          : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-200 dark:shadow-emerald-900/20'
+                      }`}
                     >
-                      {budgetSaving ? t('Saving...') : t('Save Budget')}
+                      {budgetSaving 
+                        ? t('Saving...') 
+                        : showExpiryConfirm 
+                          ? t('Confirm & Save') 
+                          : t('Save Budget')}
                     </button>
                   </div>
                 </div>
