@@ -38,11 +38,11 @@ New to the app? Our interactive guided tour walks you through the core features,
 - **Email Verification**: Built-in verification flow to ensure account security.
 - **Data Integrity**: Powered by MongoDB for reliable data storage and retrieval.
 
-![Sign In Preview](sign-in.png)
+![Sign In Preview](signin.png)
 
 ---
 
-![Sign Up Preview](sign-up.png)
+![Sign Up Preview](signup.png)
 
 ---
 
