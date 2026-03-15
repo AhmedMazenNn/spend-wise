@@ -19,6 +19,7 @@ import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
 import arabicReshaper from 'arabic-reshaper'
 import { arabicFontBase64 } from '../../assets/fonts/arabic-font'
+import { fetchCategoryBudgets, fetchActiveBudget, type CategoryBudget, type Budget } from '../../api/budgets'
 import {
   AreaChart,
   Area,
@@ -63,7 +64,8 @@ function getPeriodLabel(
   selectedMonth: string,
   selectedDate: string,
   dateRange: { start: string; end: string },
-  locale: string
+  locale: string,
+  t: any
 ): string {
   switch (filterMode) {
     case 'month':
@@ -79,21 +81,59 @@ function getPeriodLabel(
         day: 'numeric',
       })
     case 'range':
-      return `${new Date(dateRange.start).toLocaleDateString(locale)} – ${new Date(dateRange.end).toLocaleDateString(locale)}`
+      return `${new Date(dateRange.start).toLocaleDateString(locale)} ${t('to')} ${new Date(dateRange.end).toLocaleDateString(locale)}`
     default:
       return ''
   }
 }
-const fixArabic = (str: any) => {
-  if (typeof str !== 'string' || !str) return str
-  if (!/[\u0600-\u06FF]/.test(str)) return str
+
+function getFriendlyFilename(
+  filterMode: ReportFilterMode,
+  selectedMonth: string,
+  selectedDate: string,
+  dateRange: { start: string; end: string },
+  t: any,
+  ext: 'pdf' | 'xlsx'
+): string {
+  const locale = 'en-US'
+  let label = ''
+  
+  if (filterMode === 'month') {
+    label = new Date(selectedMonth + '-01').toLocaleDateString(locale, {
+      month: 'long',
+      year: 'numeric',
+    })
+  } else if (filterMode === 'date') {
+    label = new Date(selectedDate).toLocaleDateString(locale, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'numeric',
+      year: 'numeric'
+    })
+  } else if (filterMode === 'range') {
+    label = `${new Date(dateRange.start).toLocaleDateString(locale)}_${t('to')}_${new Date(dateRange.end).toLocaleDateString(locale)}`
+  }
+  
+  const baseName = t('Expense Report')
+  return `${baseName}_${label}.${ext}`.replace(/[/\\?%*:|"<>]/g, '-')
+}
+
+const isArabicText = (value: string) => /[\u0600-\u06FF]/.test(value)
+
+const fixArabic = (value: any) => {
+  if (value === null || value === undefined) return ''
+  const str = String(value)
+
+  if (!isArabicText(str)) return str
+
   try {
     const reshaped = arabicReshaper.reshape(str)
-    return reshaped.split('').reverse().join('')
-  } catch (e) {
+    return reshaped
+  } catch {
     return str
   }
 }
+
 
 export function Report() {
   const { t, i18n } = useTranslation()
@@ -118,6 +158,9 @@ export function Report() {
   const [exporting, setExporting] = useState<'pdf' | 'excel' | null>(null)
   const [selectedCategory, setSelectedCategory] = useState<string>('All')
   const [searchTerm, setSearchTerm] = useState('')
+  
+  const [allBudgets, setAllBudgets] = useState<CategoryBudget[]>([])
+  const [overallBudget, setOverallBudget] = useState<Budget | null>(null)
 
   const { start, end } = getStartEndDates(filterMode, selectedMonth, selectedDate, dateRange)
 
@@ -152,6 +195,9 @@ export function Report() {
     fetchCategories()
       .then((r) => setCategories(r.categories))
       .catch(() => setCategories([]))
+
+    fetchCategoryBudgets().then(r => setAllBudgets(r.budgets)).catch(() => {})
+    fetchActiveBudget().then(r => setOverallBudget(r.budget)).catch(() => {})
   }, [])
 
   const categoryColorMap = useMemo(() => {
@@ -217,15 +263,15 @@ export function Report() {
       if (amount > highestDay.amount) highestDay = { date, amount }
     })
 
-    const categories: Record<string, number> = {}
+    const categoryTotals: Record<string, number> = {}
     filteredTransactions.forEach((tx) => {
-      categories[tx.category] = (categories[tx.category] || 0) + tx.amount
+      categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount
     })
 
-    const topCategoryEntry = Object.entries(categories).sort((a, b) => b[1] - a[1])[0]
+    const topCategoryEntry = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0]
     const topCategory = topCategoryEntry ? { name: topCategoryEntry[0], amount: topCategoryEntry[1] } : null
 
-    const categoryList = Object.entries(categories)
+    const categoryList = Object.entries(categoryTotals)
       .map(([name, amount]) => ({
         name,
         amount,
@@ -233,6 +279,12 @@ export function Report() {
         color: categoryColorMap[name] || '#94A3B8',
       }))
       .sort((a, b) => b.amount - a.amount)
+
+    const categoryData = categoryList.map((c) => ({
+      name: c.name,
+      value: c.amount,
+      color: c.color,
+    }))
 
     const dailyMap: Record<string, number> = {}
     filteredTransactions.forEach((tx) => {
@@ -243,18 +295,35 @@ export function Report() {
       .map(([date, amount]) => ({ date, amount }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
-    const categoryData = categoryList.map((c) => ({
-      name: c.name,
-      value: c.amount,
-      color: categoryColorMap[c.name] || '#94A3B8',
-    }))
+    const budgetMap: Record<string, number> = {}
+    allBudgets.forEach(b => {
+      const cat = categories.find(c => c.id === b.categoryId)
+      if (cat) budgetMap[cat.name] = b.amount
+    })
 
-    return { totalSpent, dailyAvg, highestDay, topCategory, categoryList, dailySpending, categoryData }
-  }, [filteredTransactions, filterMode, selectedMonth, dateRange])
+    const budgetPerformance = categoryList.map(cat => {
+      const limit = budgetMap[cat.name] || 0
+      const remaining = limit > 0 ? limit - cat.amount : 0
+      const status = limit > 0 ? (cat.amount > limit ? 'Over' : cat.amount >= limit * 0.7 ? 'Warning' : 'Normal') : 'No Budget'
+      return { ...cat, limit, remaining, status }
+    })
+
+    return { 
+      totalSpent, 
+      dailyAvg, 
+      highestDay, 
+      topCategory, 
+      categoryList, 
+      dailySpending, 
+      categoryData,
+      budgetPerformance,
+      overallBudgetLimit: overallBudget?.amount || 0
+    }
+  }, [filteredTransactions, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget])
 
   const periodLabel = useMemo(
-    () => getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, locale),
-    [filterMode, selectedMonth, selectedDate, dateRange, locale],
+    () => getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, locale, t),
+    [filterMode, selectedMonth, selectedDate, dateRange, locale, t],
   )
 
   const handleExportPDF = async () => {
@@ -264,158 +333,185 @@ export function Report() {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       const margin = 20
 
-      // Add Arabic font support
+      // Add Arabic font support for user-generated content (Amiri covers both English & Arabic)
       doc.addFileToVFS('Amiri-Regular.ttf', arabicFontBase64)
       doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal', 'Identity-H')
-      
-      // Use the universal Amiri font for the entire report to support mixed content and symbols
-      const fontName = 'Amiri'
-      doc.setFont(fontName, 'normal')
+      doc.setFont('Amiri', 'normal')
 
+      // Period Label
+      const localizedPeriodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, 'en-US', t)
+
+      // Header
       doc.setFontSize(22)
-      doc.text(fixArabic(t('Expense Report')), isArabic ? 210 - margin : margin, 20, { align: isArabic ? 'right' : 'left' })
-      
-      doc.setFontSize(11)
-      doc.setFont(fontName, 'normal')
-      doc.setTextColor(100, 100, 100)
-      doc.text(fixArabic(periodLabel), isArabic ? 210 - margin : margin, 28, { align: isArabic ? 'right' : 'left' })
-      doc.setTextColor(0, 0, 0)
+      doc.setTextColor(15, 23, 42)
+      doc.text(fixArabic(t('Expense Report')), margin, 20)
 
       doc.setFontSize(10)
-      doc.text(
-        fixArabic(`${t('Generated on')} ${new Date().toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric',
-        })}`),
-        isArabic ? 210 - margin : margin,
-        35,
-        { align: isArabic ? 'right' : 'left' }
-      )
+      doc.setTextColor(100, 116, 139)
+      doc.text(fixArabic(`${t('Period')}: ${localizedPeriodLabel}`), margin, 28)
+      doc.text(fixArabic(`${t('Generated on')}: ${new Date().toLocaleDateString('en-US')}`), margin, 34)
 
-      let y = 45
-
-      doc.setFont(fontName, 'normal')
-      doc.setFontSize(12)
-      doc.text(fixArabic(t('Summary')), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-      y += 8
-
-      doc.setFont(fontName, 'normal')
-      doc.setFontSize(10)
-      const totalSpentText = `${t('Total Spent')}: $${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`
-      doc.text(fixArabic(totalSpentText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-      y += 6
+      // Summary Stats
+      doc.setFillColor(248, 250, 252)
+      doc.roundedRect(margin, 45, 170, 30, 3, 3, 'F')
       
-      const dailyAvgText = `${t('Daily Average')}: $${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`
-      doc.text(fixArabic(dailyAvgText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-      y += 6
-      
-      const highestDayText = `${t('Highest Day')}: $${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}${
-        stats.highestDay.date ? ` (${new Date(stats.highestDay.date).toLocaleDateString(locale)})` : ''
-      }`
-      doc.text(fixArabic(highestDayText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-      y += 6
+      const statsX = [margin + 10, margin + 55, margin + 100, margin + 145]
+      const labels = [t('Total Spent'), t('Daily Average'), t('Highest Day'), t('Active Budget')]
+      const values = [
+        `$${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        `$${stats.dailyAvg.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+        `$${stats.highestDay.amount.toLocaleString()}`,
+        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString()}` : t('None')
+      ]
 
-      const topCategoryText = `${t('Top Category')}: ${stats.topCategory ? t(stats.topCategory.name) : '-'}${
-        stats.topCategory ? ` ($${stats.topCategory.amount.toLocaleString(locale, { minimumFractionDigits: 2 })})` : ''
-      }`
-      doc.text(fixArabic(topCategoryText), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-      y += 15
+      doc.setFontSize(9)
+      labels.forEach((label, i) => {
+        doc.setTextColor(100, 116, 139)
+        doc.text(fixArabic(label), statsX[i], 55)
+        doc.setTextColor(15, 23, 42)
+        doc.setFontSize(11)
+        doc.text(fixArabic(values[i]), statsX[i], 63)
+        doc.setFontSize(9)
+      })
 
-      if (filteredTransactions.length > 0) {
-        doc.setFont(fontName, 'normal')
-        doc.setFontSize(12)
-        doc.text(fixArabic(t('Transactions')), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-        y += 5
+      // Budget Performance Table
+      doc.setFontSize(14)
+      doc.setTextColor(15, 23, 42)
+      doc.text(fixArabic(t('Budget Performance')), margin, 85)
 
-        autoTable(doc, {
-          startY: y,
-          head: [[t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')].map(fixArabic)],
-          body: filteredTransactions.map((tx) => [
-            fixArabic(new Date(tx.date).toLocaleDateString(locale)),
-            fixArabic(tx.title),
-            fixArabic(t(tx.category)),
-            fixArabic(tx.amount.toLocaleString(locale, { minimumFractionDigits: 2 })),
-            fixArabic(tx.note || '')
-          ]),
-          theme: 'striped',
-          headStyles: { fillColor: [16, 185, 129], textColor: 255, font: fontName, halign: isArabic ? 'right' : 'left' },
-          bodyStyles: { font: fontName, halign: isArabic ? 'right' : 'left' },
-          margin: { left: margin, right: margin },
-          styles: { fontSize: 9, font: fontName },
-        })
+      autoTable(doc, {
+        startY: 90,
+        head: [[t('Category'), t('Budget'), t('Spent'), t('Remaining'), t('Status')].map(fixArabic)],
+        body: stats.budgetPerformance.map(b => [
+          fixArabic(t(b.name)),
+          `$${b.limit.toLocaleString()}`,
+          `$${b.amount.toLocaleString()}`,
+          `$${b.remaining.toLocaleString()}`,
+          fixArabic(t(b.status))
+        ]),
+        headStyles: { fillColor: [16, 185, 129], font: 'Amiri' },
+        styles: { font: 'Amiri' },
+        margin: { left: margin, right: margin }
+      })
 
-        y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
-      }
+      // Category Breakdown Table
+      const catY = (doc as any).lastAutoTable.finalY + 15
+      doc.setFontSize(14)
+      doc.text(fixArabic(t('Category Breakdown')), margin, catY)
 
-      if (stats.categoryList.length > 0) {
-        if (y > 250) {
-          doc.addPage()
-          y = 20
-        }
-        doc.setFont(fontName, 'normal')
-        doc.setFontSize(12)
-        doc.text(fixArabic(t('Category Breakdown')), isArabic ? 210 - margin : margin, y, { align: isArabic ? 'right' : 'left' })
-        y += 5
+      autoTable(doc, {
+        startY: catY + 5,
+        head: [[t('Category'), t('Amount'), t('Percentage')].map(fixArabic)],
+        body: stats.categoryList.map((cat) => [
+          fixArabic(t(cat.name)), 
+          `$${cat.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 
+          `${cat.percentage.toFixed(1)}%`
+        ]),
+        headStyles: { fillColor: [16, 185, 129], font: 'Amiri' },
+        styles: { font: 'Amiri' },
+        margin: { left: margin, right: margin }
+      })
 
-        autoTable(doc, {
-          startY: y,
-          head: [[t('Category'), t('Amount'), t('Percentage')].map(fixArabic)],
-          body: stats.categoryList.map((cat) => [fixArabic(t(cat.name)), fixArabic(cat.amount.toLocaleString(locale, { minimumFractionDigits: 2 })), fixArabic(`${cat.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}%`)]),
-          theme: 'striped',
-          headStyles: { fillColor: [16, 185, 129], textColor: 255, font: fontName, halign: isArabic ? 'right' : 'left' },
-          bodyStyles: { font: fontName, halign: isArabic ? 'right' : 'left' },
-          margin: { left: margin, right: margin },
-          styles: { fontSize: 9, font: fontName },
-        })
-      }
+      // Transaction Table
+      const finalY = (doc as any).lastAutoTable.finalY || 130
+      doc.setFontSize(14)
+      doc.text(fixArabic(t('Transactions')), margin, finalY + 15)
 
-      doc.save(`expense-report-${start}-to-${end}.pdf`)
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'PDF export failed')
+      autoTable(doc, {
+        startY: finalY + 5,
+        head: [[t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')].map(fixArabic)],
+        body: filteredTransactions.map((tx) => [
+          new Date(tx.date).toLocaleDateString('en-US'),
+          fixArabic(tx.title),
+          fixArabic(t(tx.category)),
+          `$${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          fixArabic(tx.note || '')
+        ]),
+        headStyles: { fillColor: [71, 85, 105], font: 'Amiri' },
+        styles: { font: 'Amiri' },
+        columnStyles: {
+          4: { cellWidth: 40 } // Give more space to notes
+        },
+        margin: { left: margin, right: margin }
+      })
+
+      const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, t, 'pdf')
+      doc.save(fileName)
+    } catch (err) {
+      console.error('PDF Export failed:', err)
+      alert('Failed to generate PDF. Please try again.')
     } finally {
       setExporting(null)
     }
   }
 
-  const handleExportExcel = async () => {
+  const handleExportExcel = () => {
     setExporting('excel')
     setExportDropdown(false)
     try {
-      const wb = XLSX.utils.book_new()
+      const activeLocale = 'en-US'
 
-      const summaryData = [
-        [t('Expense Report')],
+      // 1. Overview data
+      const overviewData = [
+        [t('Report Overview')],
         [t('Period'), periodLabel],
-        [t('Generated on'), new Date().toLocaleDateString(locale)],
+        [t('Generated on'), new Date().toLocaleString(activeLocale)],
         [],
-        [t('Summary')],
-        [t('Total Spent'), `$${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`],
-        [t('Daily Average'), `$${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`],
-        [t('Highest Day'), `$${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}`],
-        [t('Highest Day'), stats.highestDay.date ? new Date(stats.highestDay.date).toLocaleDateString(locale) : '-'],
-        [t('Top Category'), stats.topCategory ? t(stats.topCategory.name) : '-'],
-        [t('Top Category'), stats.topCategory ? `$${stats.topCategory.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}` : '-'],
+        [t('Summary Statistics')],
+        [t('Total Spent'), stats.totalSpent],
+        [t('Daily Average'), stats.dailyAvg],
+        [t('Highest Spending Day'), `${stats.highestDay.date} ($${stats.highestDay.amount})`],
+        [t('Active Budget'), stats.overallBudgetLimit || t('None')],
       ]
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Summary')
 
-      const txData = [
-        [t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')],
-        ...filteredTransactions.map((tx) => [new Date(tx.date).toLocaleDateString(locale), tx.title, t(tx.category), tx.amount, tx.note || '']),
-      ]
-      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(txData), t('Transactions'))
+      // 2. Budget Performance data
+      const budgetHeader = [t('Category'), t('Limit'), t('Spent'), t('Remaining'), t('Status')]
+      const budgetRows = stats.budgetPerformance.map(b => [
+        t(b.name),
+        b.limit,
+        b.amount,
+        b.remaining,
+        t(b.status)
+      ])
 
-      if (stats.categoryList.length > 0) {
-        const catData = [
-          [t('Category'), t('Amount'), t('Percentage')],
-          ...stats.categoryList.map((cat) => [t(cat.name), cat.amount, `${cat.percentage.toLocaleString(locale, { maximumFractionDigits: 1 })}%`]),
-        ]
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(catData), t('Categories'))
-      }
+      // 3. Transactions data
+      const txHeader = [t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')]
+      const txRows = filteredTransactions.map((tx) => [
+        new Date(tx.date).toLocaleDateString(activeLocale),
+        tx.title,
+        t(tx.category),
+        tx.amount,
+        tx.note || '',
+      ])
 
-      XLSX.writeFile(wb, `expense-report-${start}-to-${end}.xlsx`)
-    } catch (e) {
-      alert(e instanceof Error ? e.message : 'Excel export failed')
+      const wb = XLSX.utils.book_new()
+      
+      const wsOverview = XLSX.utils.aoa_to_sheet(overviewData)
+      XLSX.utils.book_append_sheet(wb, wsOverview, t('Overview'))
+
+      const wsBudget = XLSX.utils.aoa_to_sheet([budgetHeader, ...budgetRows])
+      XLSX.utils.book_append_sheet(wb, wsBudget, t('Budgets'))
+
+      const wsTransactions = XLSX.utils.aoa_to_sheet([txHeader, ...txRows])
+      XLSX.utils.book_append_sheet(wb, wsTransactions, t('Transactions'))
+
+      // 4. Category Breakdown sheet
+      const catHeader = [t('Category'), t('Amount'), t('Percentage')]
+      const catRows = stats.categoryList.map(c => [t(c.name), c.amount, `${c.percentage.toFixed(1)}%`])
+      const wsCategories = XLSX.utils.aoa_to_sheet([catHeader, ...catRows])
+      XLSX.utils.book_append_sheet(wb, wsCategories, t('Categories'))
+
+      // 5. Daily Spending sheet
+      const dailyHeader = [t('Date'), t('Amount')]
+      const dailyRows = stats.dailySpending.map(d => [d.date, d.amount])
+      const wsDaily = XLSX.utils.aoa_to_sheet([dailyHeader, ...dailyRows])
+      XLSX.utils.book_append_sheet(wb, wsDaily, t('Daily Spending'))
+
+      const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, t, 'xlsx')
+      XLSX.writeFile(wb, fileName)
+    } catch (err) {
+      console.error('Excel Export failed:', err)
+      alert('Failed to generate Excel. Please try again.')
     } finally {
       setExporting(null)
     }
