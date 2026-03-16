@@ -467,6 +467,8 @@ const resources = {
       "Don't have an account?": "ليس لديك حساب؟",
       "Already have an account?": "لديك حساب بالفعل؟",
       "Create Account": "إنشاء حساب",
+      "Overall Budget Overview": "نظرة عامة على الميزانية",
+      "Budget Progress": "تقدم الميزانية",
       "Join SpendWise today.": "انضم إلى SpendWise اليوم.",
       "Master your money, effortlessly.": "تحكم في أموالك، بكل سهولة.",
       "Email not verified": "لم يتم التحقق من البريد الإلكتروني",

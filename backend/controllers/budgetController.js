@@ -53,9 +53,7 @@ async function getActiveBudget(req, res, next) {
     const budget = await Budget.findOne({
       userId,
       isActive: true,
-      startDate: { $lte: new Date() },
-      endDate: { $gte: new Date() },
-    }).lean();
+    }).sort({ endDate: -1 }).lean();
 
     if (!budget) {
       return res.status(200).json({ budget: null });

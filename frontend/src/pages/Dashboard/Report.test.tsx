@@ -3,11 +3,19 @@ import { render, screen } from '@testing-library/react'
 import { Report } from './Report'
 import { BrowserRouter } from 'react-router-dom'
 
+import { AuthProvider } from '../../context/AuthContext'
+import { ThemeProvider } from '../../context/ThemeContext'
+import '../../i18n'
+
 function renderReport() {
   return render(
-    <BrowserRouter>
-      <Report />
-    </BrowserRouter>,
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Report />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>,
   )
 }
 
