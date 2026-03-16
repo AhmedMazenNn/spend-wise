@@ -467,7 +467,7 @@ export function Report() {
       }
 
       // Category Breakdown Table
-      const catY = (doc as any).lastAutoTable.finalY + 15
+      const catY = 85 // Safe starting value after summary rect
       doc.setFontSize(14)
       doc.text(fixArabic(t('Category Breakdown')), margin, catY)
 
@@ -485,7 +485,7 @@ export function Report() {
       })
 
       // Transaction Table
-      const finalY = (doc as any).lastAutoTable.finalY || 130
+      const finalY = (doc as any).lastAutoTable?.finalY || (catY + 40)
       doc.setFontSize(14)
       doc.text(fixArabic(t('Transactions')), margin, finalY + 15)
 
