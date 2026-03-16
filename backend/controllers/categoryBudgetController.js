@@ -53,8 +53,6 @@ async function getCategoryBudgets(req, res, next) {
     const budgets = await CategoryBudget.find({
       userId,
       isActive: true,
-      startDate: { $lte: now },
-      endDate: { $gte: now },
     }).lean();
 
     return res.status(200).json({

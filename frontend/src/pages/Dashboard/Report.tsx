@@ -295,18 +295,84 @@ export function Report() {
       .map(([date, amount]) => ({ date, amount }))
       .sort((a, b) => a.date.localeCompare(b.date))
 
-    const budgetMap: Record<string, number> = {}
-    allBudgets.forEach(b => {
-      const cat = categories.find(c => c.id === b.categoryId)
-      if (cat) budgetMap[cat.name] = b.amount
-    })
+    const budgetPerformance = allBudgets
+      .filter(b => {
+        const catExists = categories.some(c => c.id === b.categoryId)
+        if (!catExists) return false
+        
+        // Only show budgets that overlap with the report period [start, end]
+        const budgetStart = new Date(b.startDate).toISOString().split('T')[0]
+        const budgetEnd = new Date(b.endDate).toISOString().split('T')[0]
+        return budgetStart <= end && budgetEnd >= start
+      })
+      .map(b => {
+        const cat = categories.find(c => c.id === b.categoryId)!
+        const catName = cat.name
+        
+        // Calculate spent strictly within this budget's timeframe
+        const budgetStart = new Date(b.startDate).toISOString().split('T')[0]
+        const budgetEnd = new Date(b.endDate).toISOString().split('T')[0]
+        
+        const spent = displayExpenses
+          .filter(e => e.category === catName && e.date >= budgetStart && e.date <= budgetEnd)
+          .reduce((acc, curr) => acc + curr.amount, 0)
 
-    const budgetPerformance = categoryList.map(cat => {
-      const limit = budgetMap[cat.name] || 0
-      const remaining = limit > 0 ? limit - cat.amount : 0
-      const status = limit > 0 ? (cat.amount > limit ? 'Over' : cat.amount >= limit * 0.7 ? 'Warning' : 'Normal') : 'No Budget'
-      return { ...cat, limit, remaining, status }
-    })
+        const remaining = b.amount > 0 ? b.amount - spent : 0
+        const isExpired = new Date(b.endDate) < now
+        let status: 'Normal' | 'Warning' | 'Over' | 'Inactive' = 'Normal'
+        
+        if (isExpired) {
+          status = 'Inactive'
+        } else if (b.amount > 0) {
+          const threshold = b.warningThreshold || 70
+          if (spent > b.amount) status = 'Over'
+          else if (spent >= b.amount * (threshold / 100)) status = 'Warning'
+        }
+
+        return { 
+          name: catName, 
+          limit: b.amount, 
+          amount: spent, 
+          remaining, 
+          status,
+          startDate: b.startDate,
+          endDate: b.endDate,
+          warningThreshold: b.warningThreshold || 70,
+          isExpired
+        }
+      })
+
+    const overallBudgetLimit = overallBudget?.amount || 0
+    let overallBudgetSpent = 0
+    let overallBudgetRemaining = 0
+    let overallIsExpired = false
+    let overallThreshold = 70
+    let overallStatus: 'Normal' | 'Warning' | 'Over' | 'Inactive' = 'Normal'
+
+    if (overallBudget) {
+      const bStart = new Date(overallBudget.startDate).toISOString().split('T')[0]
+      const bEnd = new Date(overallBudget.endDate).toISOString().split('T')[0]
+      
+      // Check if overall budget overlaps with report period
+      const overlaps = bStart <= end && bEnd >= start
+      
+      if (overlaps) {
+        overallBudgetSpent = displayExpenses
+          .filter(e => e.date >= bStart && e.date <= bEnd)
+          .reduce((acc, curr) => acc + curr.amount, 0)
+        
+        overallBudgetRemaining = overallBudgetLimit > 0 ? overallBudgetLimit - overallBudgetSpent : 0
+        overallIsExpired = new Date(overallBudget.endDate) < now
+        overallThreshold = overallBudget.warningThreshold || 70
+        
+        if (overallIsExpired) {
+          overallStatus = 'Inactive'
+        } else if (overallBudgetLimit > 0) {
+          if (overallBudgetSpent > overallBudgetLimit) overallStatus = 'Over'
+          else if (overallBudgetSpent >= overallBudgetLimit * (overallThreshold / 100)) overallStatus = 'Warning'
+        }
+      }
+    }
 
     return { 
       totalSpent, 
@@ -317,9 +383,16 @@ export function Report() {
       dailySpending, 
       categoryData,
       budgetPerformance,
-      overallBudgetLimit: overallBudget?.amount || 0
+      overallBudgetLimit,
+      overallBudgetRemaining,
+      overallBudgetSpent,
+      overallBudgetStart: overallBudget?.startDate,
+      overallBudgetEnd: overallBudget?.endDate,
+      overallStatus,
+      overallThreshold,
+      overallIsExpired
     }
-  }, [filteredTransactions, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget])
+  }, [displayExpenses, filteredTransactions, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget, now])
 
   const periodLabel = useMemo(
     () => getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, locale, t),
@@ -356,12 +429,12 @@ export function Report() {
       doc.roundedRect(margin, 45, 170, 30, 3, 3, 'F')
       
       const statsX = [margin + 10, margin + 55, margin + 100, margin + 145]
-      const labels = [t('Total Spent'), t('Daily Average'), t('Highest Day'), t('Active Budget')]
+      const labels = [t('Total Spent'), t('Daily Average'), t('Active Budget'), t('Remaining Budget')]
       const values = [
         `$${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
         `$${stats.dailyAvg.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        `$${stats.highestDay.amount.toLocaleString()}`,
-        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString()}` : t('None')
+        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString()}` : t('None'),
+        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetRemaining.toLocaleString()}` : '-'
       ]
 
       doc.setFontSize(9)
@@ -370,29 +443,28 @@ export function Report() {
         doc.text(fixArabic(label), statsX[i], 55)
         doc.setTextColor(15, 23, 42)
         doc.setFontSize(11)
-        doc.text(fixArabic(values[i]), statsX[i], 63)
+        
+        let val = values[i];
+        if (i === 2 && stats.overallStatus === 'Inactive') {
+          val += ` (${fixArabic(t('Inactive'))})`;
+        }
+        doc.text(fixArabic(val), statsX[i], 63)
         doc.setFontSize(9)
       })
 
-      // Budget Performance Table
-      doc.setFontSize(14)
-      doc.setTextColor(15, 23, 42)
-      doc.text(fixArabic(t('Budget Performance')), margin, 85)
-
-      autoTable(doc, {
-        startY: 90,
-        head: [[t('Category'), t('Budget'), t('Spent'), t('Remaining'), t('Status')].map(fixArabic)],
-        body: stats.budgetPerformance.map(b => [
-          fixArabic(t(b.name)),
-          `$${b.limit.toLocaleString()}`,
-          `$${b.amount.toLocaleString()}`,
-          `$${b.remaining.toLocaleString()}`,
-          fixArabic(t(b.status))
-        ]),
-        headStyles: { fillColor: [16, 185, 129], font: 'Amiri' },
-        styles: { font: 'Amiri' },
-        margin: { left: margin, right: margin }
-      })
+      if (stats.overallBudgetLimit > 0) {
+        doc.setFontSize(7)
+        doc.setTextColor(100, 116, 139)
+        const budgetDates = `${new Date(stats.overallBudgetStart!).toLocaleDateString('en-US')} - ${new Date(stats.overallBudgetEnd!).toLocaleDateString('en-US')}`
+        doc.text(fixArabic(`${t('Period')}: ${budgetDates}`), statsX[2], 68)
+        doc.text(fixArabic(`${t('Threshold')}: ${stats.overallThreshold}%`), statsX[2], 71)
+        
+        if (stats.overallStatus === 'Inactive') {
+          doc.setTextColor(239, 68, 68) // red-500
+          doc.setFontSize(8)
+          doc.text(fixArabic(t('Note: This budget is now INACTIVE and will not track new expenses.')), statsX[2], 75)
+        }
+      }
 
       // Category Breakdown Table
       const catY = (doc as any).lastAutoTable.finalY + 15
@@ -452,31 +524,27 @@ export function Report() {
       const activeLocale = 'en-US'
 
       // 1. Overview data
+      const overviewHeader = [t('Report Overview'), '']
       const overviewData = [
-        [t('Report Overview')],
         [t('Period'), periodLabel],
         [t('Generated on'), new Date().toLocaleString(activeLocale)],
         [],
-        [t('Summary Statistics')],
+        [t('Summary Statistics'), ''],
         [t('Total Spent'), stats.totalSpent],
         [t('Daily Average'), stats.dailyAvg],
-        [t('Highest Spending Day'), `${stats.highestDay.date} ($${stats.highestDay.amount})`],
-        [t('Active Budget'), stats.overallBudgetLimit || t('None')],
+        [t('Overall Budget'), stats.overallBudgetLimit > 0 ? `${stats.overallBudgetRemaining.toLocaleString()} ${t('remaining of')} ${stats.overallBudgetLimit.toLocaleString()}` : t('None')],
+        [t('Overall Budget Status'), t(stats.overallStatus)],
+        [t('Overall Budget Warning Threshold'), stats.overallBudgetLimit > 0 ? `${stats.overallThreshold}%` : '-'],
+        [t('Overall Budget Start Date'), stats.overallBudgetStart ? new Date(stats.overallBudgetStart).toLocaleDateString(activeLocale) : '-'],
+        [t('Overall Budget End Date'), stats.overallBudgetEnd ? new Date(stats.overallBudgetEnd).toLocaleDateString(activeLocale) : '-'],
+        [t('Top Category'), stats.topCategory ? t(stats.topCategory.name) : '-'],
+        [t('Top Category Amount'), stats.topCategory ? stats.topCategory.amount : '-'],
+        ...(stats.overallStatus === 'Inactive' ? [[t('Note'), t('This budget is now INACTIVE and will not track new expenses.')]] : []),
       ]
 
-      // 2. Budget Performance data
-      const budgetHeader = [t('Category'), t('Limit'), t('Spent'), t('Remaining'), t('Status')]
-      const budgetRows = stats.budgetPerformance.map(b => [
-        t(b.name),
-        b.limit,
-        b.amount,
-        b.remaining,
-        t(b.status)
-      ])
-
-      // 3. Transactions data
-      const txHeader = [t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')]
-      const txRows = filteredTransactions.map((tx) => [
+      // 2. Transactions data
+      const transactionsHeader = [t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')]
+      const transactionsRows = filteredTransactions.map((tx) => [
         new Date(tx.date).toLocaleDateString(activeLocale),
         tx.title,
         t(tx.category),
@@ -486,22 +554,19 @@ export function Report() {
 
       const wb = XLSX.utils.book_new()
       
-      const wsOverview = XLSX.utils.aoa_to_sheet(overviewData)
+      const wsOverview = XLSX.utils.aoa_to_sheet([overviewHeader, ...overviewData])
       XLSX.utils.book_append_sheet(wb, wsOverview, t('Overview'))
 
-      const wsBudget = XLSX.utils.aoa_to_sheet([budgetHeader, ...budgetRows])
-      XLSX.utils.book_append_sheet(wb, wsBudget, t('Budgets'))
-
-      const wsTransactions = XLSX.utils.aoa_to_sheet([txHeader, ...txRows])
+      const wsTransactions = XLSX.utils.aoa_to_sheet([transactionsHeader, ...transactionsRows])
       XLSX.utils.book_append_sheet(wb, wsTransactions, t('Transactions'))
 
-      // 4. Category Breakdown sheet
+      // 3. Category Breakdown sheet
       const catHeader = [t('Category'), t('Amount'), t('Percentage')]
       const catRows = stats.categoryList.map(c => [t(c.name), c.amount, `${c.percentage.toFixed(1)}%`])
       const wsCategories = XLSX.utils.aoa_to_sheet([catHeader, ...catRows])
       XLSX.utils.book_append_sheet(wb, wsCategories, t('Categories'))
 
-      // 5. Daily Spending sheet
+      // 4. Daily Spending sheet
       const dailyHeader = [t('Date'), t('Amount')]
       const dailyRows = stats.dailySpending.map(d => [d.date, d.amount])
       const wsDaily = XLSX.utils.aoa_to_sheet([dailyHeader, ...dailyRows])
@@ -662,7 +727,7 @@ export function Report() {
               className="space-y-8"
             >
               {/* Summary Stats */}
-              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                   {
                     label: t('Total Spent'),
@@ -675,17 +740,9 @@ export function Report() {
                     color: 'text-slate-900 dark:text-white',
                   },
                   {
-                    label: t('Highest Day'),
-                    value: `$${stats.highestDay.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}`,
-                    sub: stats.highestDay.date
-                      ? new Date(stats.highestDay.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })
-                      : '-',
-                    color: 'text-red-500',
-                  },
-                  {
                     label: t('Top Category'),
                     value: stats.topCategory ? t(stats.topCategory.name) : '-',
-                    sub: stats.topCategory ? `${Math.round((stats.topCategory.amount / stats.totalSpent) * 100)}%` : '-',
+                    sub: stats.topCategory ? `$${stats.topCategory.amount.toLocaleString(locale)}` : null,
                     color: 'text-emerald-600',
                   },
                 ].map((stat, i) => (
@@ -698,6 +755,91 @@ export function Report() {
                   </div>
                 ))}
               </motion.div>
+
+              {/* Overall Budget Overview Section */}
+              {stats.overallBudgetLimit > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.35 }}
+                  className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl p-8 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50 mb-8"
+                >
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <h2 className="text-xl font-bold font-heading text-slate-900 dark:text-white">{t('Overall Budget Overview')}</h2>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          stats.overallStatus === 'Over' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
+                          stats.overallStatus === 'Warning' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                          stats.overallStatus === 'Inactive' ? 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400' :
+                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        }`}>
+                          {t(stats.overallStatus)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                        {new Date(stats.overallBudgetStart!).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })} - {new Date(stats.overallBudgetEnd!).toLocaleDateString(locale, { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-400 font-medium mb-1">{t('Warning Threshold')}</p>
+                      <p className="text-lg font-bold text-slate-700 dark:text-slate-300">{stats.overallThreshold}%</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight mb-1">{t('Total Limit')}</p>
+                      <p className="text-2xl font-black text-slate-900 dark:text-white">${stats.overallBudgetLimit.toLocaleString(locale)}</p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight mb-1">{t('Spent')}</p>
+                      <p className={`text-2xl font-black ${stats.overallStatus === 'Over' ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
+                        ${stats.overallBudgetSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight mb-1">{t('Remaining')}</p>
+                      <p className={`text-2xl font-black ${stats.overallBudgetRemaining < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                        ${stats.overallBudgetRemaining.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="relative pt-1">
+                    <div className="flex mb-2 items-center justify-between">
+                      <div>
+                        <span className="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-slate-600 bg-slate-200 dark:bg-slate-700 dark:text-slate-300">
+                          {t('Budget Progress')}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-semibold inline-block text-slate-600 dark:text-slate-400">
+                          {Math.round((stats.overallBudgetSpent / stats.overallBudgetLimit) * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="overflow-hidden h-3 mb-4 text-xs flex rounded-full bg-slate-100 dark:bg-slate-700">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min((stats.overallBudgetSpent / stats.overallBudgetLimit) * 100, 100)}%` }}
+                        transition={{ duration: 1, ease: 'easeOut' }}
+                        className={`shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center ${
+                          stats.overallStatus === 'Over' ? 'bg-red-500' :
+                          stats.overallStatus === 'Warning' ? 'bg-amber-500' :
+                          stats.overallStatus === 'Inactive' ? 'bg-slate-400' :
+                          'bg-emerald-500'
+                        }`}
+                      />
+                    </div>
+                    {stats.overallStatus === 'Inactive' && (
+                      <p className="text-xs text-red-500 font-medium italic mt-2">
+                        * {t('Note: This budget is now INACTIVE and will not track new expenses.')}
+                      </p>
+                    )}
+                  </div>
+                </motion.div>
+              )}
 
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
