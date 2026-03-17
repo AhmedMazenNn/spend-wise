@@ -394,10 +394,6 @@ export function Report() {
     }
   }, [displayExpenses, filteredTransactions, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget, now])
 
-  const periodLabel = useMemo(
-    () => getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, locale, t),
-    [filterMode, selectedMonth, selectedDate, dateRange, locale, t],
-  )
 
   const handleExportPDF = async () => {
     setExporting('pdf')
@@ -405,36 +401,40 @@ export function Report() {
     try {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       const margin = 20
+      
+      // Use English translation function specifically for export
+      const tEn = i18n.getFixedT('en')
+      const enLocale = 'en-US'
 
-      // Add Arabic font support for user-generated content (Amiri covers both English & Arabic)
+      // Add Arabic font support just in case names are in Arabic, but we force labels to English
       doc.addFileToVFS('Amiri-Regular.ttf', arabicFontBase64)
       doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal', 'Identity-H')
       doc.setFont('Amiri', 'normal')
 
-      // Period Label
-      const localizedPeriodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, 'en-US', t)
+      // Period Label in English
+      const localizedPeriodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, enLocale, tEn)
 
-      // Header
+      // Header (English)
       doc.setFontSize(22)
       doc.setTextColor(15, 23, 42)
-      doc.text(fixArabic(t('Expense Report')), margin, 20)
+      doc.text(fixArabic(tEn('Expense Report')), margin, 20)
 
       doc.setFontSize(10)
       doc.setTextColor(100, 116, 139)
-      doc.text(fixArabic(`${t('Period')}: ${localizedPeriodLabel}`), margin, 28)
-      doc.text(fixArabic(`${t('Generated on')}: ${new Date().toLocaleDateString('en-US')}`), margin, 34)
+      doc.text(fixArabic(`${tEn('Period')}: ${localizedPeriodLabel}`), margin, 28)
+      doc.text(fixArabic(`${tEn('Generated on')}: ${new Date().toLocaleDateString(enLocale)}`), margin, 34)
 
       // Summary Stats
       doc.setFillColor(248, 250, 252)
       doc.roundedRect(margin, 45, 170, 30, 3, 3, 'F')
       
       const statsX = [margin + 10, margin + 55, margin + 100, margin + 145]
-      const labels = [t('Total Spent'), t('Daily Average'), t('Active Budget'), t('Remaining Budget')]
+      const labels = [tEn('Total Spent'), tEn('Daily Average'), tEn('Active Budget'), tEn('Remaining Budget')]
       const values = [
-        `$${stats.totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        `$${stats.dailyAvg.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
-        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString()}` : t('None'),
-        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetRemaining.toLocaleString()}` : '-'
+        `$${stats.totalSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+        `$${stats.dailyAvg.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString(enLocale)}` : tEn('None'),
+        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetRemaining.toLocaleString(enLocale)}` : '-'
       ]
 
       doc.setFontSize(9)
@@ -446,7 +446,7 @@ export function Report() {
         
         let val = values[i];
         if (i === 2 && stats.overallStatus === 'Inactive') {
-          val += ` (${fixArabic(t('Inactive'))})`;
+          val += ` (${fixArabic(tEn('Inactive'))})`;
         }
         doc.text(fixArabic(val), statsX[i], 63)
         doc.setFontSize(9)
@@ -455,30 +455,35 @@ export function Report() {
       if (stats.overallBudgetLimit > 0) {
         doc.setFontSize(7)
         doc.setTextColor(100, 116, 139)
-        const budgetDates = `${new Date(stats.overallBudgetStart!).toLocaleDateString('en-US')} - ${new Date(stats.overallBudgetEnd!).toLocaleDateString('en-US')}`
-        doc.text(fixArabic(`${t('Period')}: ${budgetDates}`), statsX[2], 68)
-        doc.text(fixArabic(`${t('Threshold')}: ${stats.overallThreshold}%`), statsX[2], 71)
+        const budgetDates = `${new Date(stats.overallBudgetStart!).toLocaleDateString(enLocale)} - ${new Date(stats.overallBudgetEnd!).toLocaleDateString(enLocale)}`
+        doc.text(fixArabic(`${tEn('Period')}: ${budgetDates}`), statsX[2], 68)
+        doc.text(fixArabic(`${tEn('Threshold')}: ${stats.overallThreshold}%`), statsX[2], 71)
         
         if (stats.overallStatus === 'Inactive') {
           doc.setTextColor(239, 68, 68) // red-500
           doc.setFontSize(8)
-          doc.text(fixArabic(t('Note: This budget is now INACTIVE and will not track new expenses.')), statsX[2], 75)
+          doc.text(fixArabic(tEn('Note: This budget is now INACTIVE and will not track new expenses.')), statsX[2], 75)
         }
       }
 
       // Category Breakdown Table
       const catY = 85 // Safe starting value after summary rect
       doc.setFontSize(14)
-      doc.text(fixArabic(t('Category Breakdown')), margin, catY)
+      doc.text(fixArabic(tEn('Category Breakdown')), margin, catY)
 
       autoTable(doc, {
         startY: catY + 5,
-        head: [[t('Category'), t('Amount'), t('Percentage')].map(fixArabic)],
-        body: stats.categoryList.map((cat) => [
-          fixArabic(t(cat.name)), 
-          `$${cat.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, 
-          `${cat.percentage.toFixed(1)}%`
-        ]),
+        head: [[tEn('Category'), tEn('Amount'), tEn('Percentage'), tEn('Status'), tEn('Threshold')].map(fixArabic)],
+        body: stats.categoryList.map((cat) => {
+          const budget = stats.budgetPerformance.find(b => b.name === cat.name);
+          return [
+            fixArabic(tEn(cat.name)), 
+            `$${cat.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`, 
+            `${cat.percentage.toFixed(1)}%`,
+            fixArabic(budget ? tEn(budget.status) : tEn('None')),
+            budget ? `${budget.warningThreshold}%` : '-'
+          ];
+        }),
         headStyles: { fillColor: [16, 185, 129], font: 'Amiri' },
         styles: { font: 'Amiri' },
         margin: { left: margin, right: margin }
@@ -487,16 +492,16 @@ export function Report() {
       // Transaction Table
       const finalY = (doc as any).lastAutoTable?.finalY || (catY + 40)
       doc.setFontSize(14)
-      doc.text(fixArabic(t('Transactions')), margin, finalY + 15)
+      doc.text(fixArabic(tEn('Transactions')), margin, finalY + 15)
 
       autoTable(doc, {
         startY: finalY + 5,
-        head: [[t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')].map(fixArabic)],
+        head: [[tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Note')].map(fixArabic)],
         body: filteredTransactions.map((tx) => [
-          new Date(tx.date).toLocaleDateString('en-US'),
+          new Date(tx.date).toLocaleDateString(enLocale),
           fixArabic(tx.title),
-          fixArabic(t(tx.category)),
-          `$${tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}`,
+          fixArabic(tEn(tx.category)),
+          `$${tx.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
           fixArabic(tx.note || '')
         ]),
         headStyles: { fillColor: [71, 85, 105], font: 'Amiri' },
@@ -507,7 +512,7 @@ export function Report() {
         margin: { left: margin, right: margin }
       })
 
-      const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, t, 'pdf')
+      const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, tEn, 'pdf')
       doc.save(fileName)
     } catch (err) {
       console.error('PDF Export failed:', err)
@@ -521,33 +526,37 @@ export function Report() {
     setExporting('excel')
     setExportDropdown(false)
     try {
-      const activeLocale = 'en-US'
+      const enLocale = 'en-US'
+      const tEn = i18n.getFixedT('en')
+
+      // Use English-only period label
+      const localizedPeriodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, enLocale, tEn)
 
       // 1. Overview data
-      const overviewHeader = [t('Report Overview'), '']
+      const overviewHeader = [tEn('Report Overview'), '']
       const overviewData = [
-        [t('Period'), periodLabel],
-        [t('Generated on'), new Date().toLocaleString(activeLocale)],
+        [tEn('Period'), localizedPeriodLabel],
+        [tEn('Generated on'), new Date().toLocaleString(enLocale)],
         [],
-        [t('Summary Statistics'), ''],
-        [t('Total Spent'), stats.totalSpent],
-        [t('Daily Average'), stats.dailyAvg],
-        [t('Overall Budget'), stats.overallBudgetLimit > 0 ? `${stats.overallBudgetRemaining.toLocaleString()} ${t('remaining of')} ${stats.overallBudgetLimit.toLocaleString()}` : t('None')],
-        [t('Overall Budget Status'), t(stats.overallStatus)],
-        [t('Overall Budget Warning Threshold'), stats.overallBudgetLimit > 0 ? `${stats.overallThreshold}%` : '-'],
-        [t('Overall Budget Start Date'), stats.overallBudgetStart ? new Date(stats.overallBudgetStart).toLocaleDateString(activeLocale) : '-'],
-        [t('Overall Budget End Date'), stats.overallBudgetEnd ? new Date(stats.overallBudgetEnd).toLocaleDateString(activeLocale) : '-'],
-        [t('Top Category'), stats.topCategory ? t(stats.topCategory.name) : '-'],
-        [t('Top Category Amount'), stats.topCategory ? stats.topCategory.amount : '-'],
-        ...(stats.overallStatus === 'Inactive' ? [[t('Note'), t('This budget is now INACTIVE and will not track new expenses.')]] : []),
+        [tEn('Summary Statistics'), ''],
+        [tEn('Total Spent'), stats.totalSpent],
+        [tEn('Daily Average'), stats.dailyAvg],
+        [tEn('Overall Budget'), stats.overallBudgetLimit > 0 ? `${stats.overallBudgetRemaining.toLocaleString(enLocale)} ${tEn('remaining of')} ${stats.overallBudgetLimit.toLocaleString(enLocale)}` : tEn('None')],
+        [tEn('Overall Budget Status'), tEn(stats.overallStatus)],
+        [tEn('Overall Budget Warning Threshold'), stats.overallBudgetLimit > 0 ? `${stats.overallThreshold}%` : '-'],
+        [tEn('Overall Budget Start Date'), stats.overallBudgetStart ? new Date(stats.overallBudgetStart).toLocaleDateString(enLocale) : '-'],
+        [tEn('Overall Budget End Date'), stats.overallBudgetEnd ? new Date(stats.overallBudgetEnd).toLocaleDateString(enLocale) : '-'],
+        [tEn('Top Category'), stats.topCategory ? tEn(stats.topCategory.name) : '-'],
+        [tEn('Top Category Amount'), stats.topCategory ? stats.topCategory.amount : '-'],
+        ...(stats.overallStatus === 'Inactive' ? [[tEn('Note'), tEn('This budget is now INACTIVE and will not track new expenses.')]] : []),
       ]
 
       // 2. Transactions data
-      const transactionsHeader = [t('Date'), t('Title'), t('Category'), t('Amount'), t('Note')]
+      const transactionsHeader = [tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Note')]
       const transactionsRows = filteredTransactions.map((tx) => [
-        new Date(tx.date).toLocaleDateString(activeLocale),
+        new Date(tx.date).toLocaleDateString(enLocale),
         tx.title,
-        t(tx.category),
+        tEn(tx.category),
         tx.amount,
         tx.note || '',
       ])
@@ -555,24 +564,24 @@ export function Report() {
       const wb = XLSX.utils.book_new()
       
       const wsOverview = XLSX.utils.aoa_to_sheet([overviewHeader, ...overviewData])
-      XLSX.utils.book_append_sheet(wb, wsOverview, t('Overview'))
+      XLSX.utils.book_append_sheet(wb, wsOverview, tEn('Overview'))
 
       const wsTransactions = XLSX.utils.aoa_to_sheet([transactionsHeader, ...transactionsRows])
-      XLSX.utils.book_append_sheet(wb, wsTransactions, t('Transactions'))
+      XLSX.utils.book_append_sheet(wb, wsTransactions, tEn('Transactions'))
 
       // 3. Category Breakdown sheet
-      const catHeader = [t('Category'), t('Amount'), t('Percentage')]
-      const catRows = stats.categoryList.map(c => [t(c.name), c.amount, `${c.percentage.toFixed(1)}%`])
+      const catHeader = [tEn('Category'), tEn('Amount'), tEn('Percentage')]
+      const catRows = stats.categoryList.map(c => [tEn(c.name), c.amount, `${c.percentage.toFixed(1)}%`])
       const wsCategories = XLSX.utils.aoa_to_sheet([catHeader, ...catRows])
-      XLSX.utils.book_append_sheet(wb, wsCategories, t('Categories'))
+      XLSX.utils.book_append_sheet(wb, wsCategories, tEn('Categories'))
 
       // 4. Daily Spending sheet
-      const dailyHeader = [t('Date'), t('Amount')]
+      const dailyHeader = [tEn('Date'), tEn('Amount')]
       const dailyRows = stats.dailySpending.map(d => [d.date, d.amount])
       const wsDaily = XLSX.utils.aoa_to_sheet([dailyHeader, ...dailyRows])
-      XLSX.utils.book_append_sheet(wb, wsDaily, t('Daily Spending'))
+      XLSX.utils.book_append_sheet(wb, wsDaily, tEn('Daily Spending'))
 
-      const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, t, 'xlsx')
+      const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, tEn, 'xlsx')
       XLSX.writeFile(wb, fileName)
     } catch (err) {
       console.error('Excel Export failed:', err)

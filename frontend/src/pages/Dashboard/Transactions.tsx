@@ -685,7 +685,7 @@ function EditExpenseModal({
                 >
                   {categories.map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.icon} {c.name}
+                      {c.icon} {t(c.name)}
                     </option>
                   ))}
                 </select>

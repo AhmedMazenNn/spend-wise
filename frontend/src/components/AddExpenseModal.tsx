@@ -358,7 +358,7 @@ export function AddExpenseModal({
                               }
                             >
                               <span>{cat.icon || '📦'}</span>
-                              <span className="font-medium text-sm">{cat.name}</span>
+                              <span className="font-medium text-sm">{t(cat.name)}</span>
                               {categoryId === cat.id && (
                                 <Check className={`w-3 h-3 ${isArabic ? 'mr-1' : 'ml-1'}`} />
                               )}
