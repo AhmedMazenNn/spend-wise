@@ -2,10 +2,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  ArrowLeftRight,
-  BarChart3,
-  Settings,
   LogOut,
   ShieldCheck,
   X,
@@ -18,6 +14,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { getStoredUser, logout } from '../api/auth'
 import { useTranslation } from 'react-i18next'
 import { useTheme } from '../context/ThemeContext'
+import { LottieIcon, LOTTIE_FILTERS } from './LottieIcon'
+import dashboardAnim from '../assets/dashboard-icon.json'
+import transactionsAnim from '../assets/transactions-icon.json'
+import reportAnim from '../assets/report-icon.json'
+import categoryBudgetAnim from '../assets/category-budget-icon.json'
+import settingsAnim from '../assets/settings-icon.json'
 
 export function Sidebar() {
   const location = useLocation()
@@ -32,12 +34,12 @@ export function Sidebar() {
   const dir = isArabic ? 'rtl' : 'ltr'
 
   const navItems = [
-    { name: t('Dashboard'), icon: LayoutDashboard, path: '/dashboard' },
-    { name: t('Transactions'), icon: ArrowLeftRight, path: '/transactions' },
-    { name: t('Report'), icon: BarChart3, path: '/report' },
-    { name: t('Category Budgets'), icon: LayoutDashboard, path: '/category-budgets' },
-    { name: t('Settings'), icon: Settings, path: '/settings' },
-    ...(isAdmin ? [{ name: t('Admin'), icon: ShieldCheck, path: '/admin' }] : []),
+    { name: t('Dashboard'), anim: dashboardAnim, path: '/dashboard' },
+    { name: t('Transactions'), anim: transactionsAnim, path: '/transactions' },
+    { name: t('Report'), anim: reportAnim, path: '/report' },
+    { name: t('Category Budgets'), anim: categoryBudgetAnim, path: '/category-budgets' },
+    { name: t('Settings'), anim: settingsAnim, path: '/settings' },
+    ...(isAdmin ? [{ name: t('Admin'), anim: null, path: '/admin' }] : []),
   ]
 
   const initials = useMemo(() => {
@@ -161,7 +163,22 @@ export function Sidebar() {
                         : 'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50',
                   ].join(' ')}
                 >
-                  <item.icon className="w-5 h-5 shrink-0" />
+                  {item.anim ? (
+                    <LottieIcon
+                      animationData={item.anim}
+                      isActive={isActive}
+                      size={24}
+                      colorFilter={
+                        isActive
+                          ? LOTTIE_FILTERS.white
+                          : theme === 'dark'
+                          ? LOTTIE_FILTERS.slate300
+                          : LOTTIE_FILTERS.slate600
+                      }
+                    />
+                  ) : (
+                    <ShieldCheck className="w-5 h-5 shrink-0" />
+                  )}
                   <span className="font-medium">{item.name}</span>
                 </div>
               </Link>
@@ -329,7 +346,20 @@ export function Sidebar() {
                               : 'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50',
                         ].join(' ')}
                       >
-                        <item.icon className="w-5 h-5 shrink-0" />
+                        {item.anim ? (
+                          <LottieIcon
+                            animationData={item.anim}
+                            isActive={isActive}
+                            size={24}
+                            colorFilter={
+                              isActive
+                                ? LOTTIE_FILTERS.white
+                                : LOTTIE_FILTERS.slate300
+                            }
+                          />
+                        ) : (
+                          <ShieldCheck className="w-5 h-5 shrink-0" />
+                        )}
                         <span className="font-medium">{item.name}</span>
                       </div>
                     </Link>

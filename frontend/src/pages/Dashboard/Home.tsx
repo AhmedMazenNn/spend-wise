@@ -22,6 +22,7 @@ import Onboarding from '../../components/Onboarding'
 import { useExpenseData, type TimePeriod } from '../../hooks/useExpenseData'
 import { getStoredUser } from '../../api/auth'
 import { setBudget, removeBudget } from '../../api/budgets'
+import { LoadingScreen } from '../../components/LoadingScreen'
 
 type FilterMode = 'preset' | 'custom'
 
@@ -194,17 +195,7 @@ function Home() {
     : '0%'
 
   if (loading && !data) {
-    return (
-      <div className="flex min-h-screen bg-main">
-        <Sidebar />
-        <main
-          dir={isArabic ? 'rtl' : 'ltr'}
-          className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 flex items-center justify-center`}
-        >
-          <div className="text-slate-500 dark:text-slate-400">{t('Loading...')}</div>
-        </main>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (error) {

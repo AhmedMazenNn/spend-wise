@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { Sidebar } from '../../components/Sidebar'
 import { useTranslation } from 'react-i18next'
+import { LoadingScreen } from '../../components/LoadingScreen'
 import { fetchExpenses } from '../../api/expenses'
 import type { Expense } from '../../api/expenses'
 import { fetchCategories } from '../../api/categories'
@@ -725,7 +726,7 @@ export function Report() {
           </motion.header>
 
           {loading ? (
-            <div className="text-center py-16 text-slate-600 dark:text-slate-400 font-medium">{t('Loading report...')}</div>
+            <LoadingScreen />
           ) : (
             // ✅ Key part: loaded content has its own motion container, so it animates correctly on mount
             <motion.div

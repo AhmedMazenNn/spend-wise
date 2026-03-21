@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { logout } from '../../api/auth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Sidebar } from '../../components/Sidebar'
-import { Save, Trash2, X } from 'lucide-react'
+import { Save, X } from 'lucide-react'
+import { LottieIcon, LOTTIE_FILTERS } from '../../components/LottieIcon'
+import trashAnim from '../../assets/trash-icon.json'
 import {
   fetchProfile,
   updateMe,
@@ -392,7 +394,12 @@ export function Settings() {
               onClick={() => setDeleteOpen(true)}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 border-2 border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 font-semibold rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 hover:border-red-300 dark:hover:border-red-500/50 transition-colors"
             >
-              <Trash2 className="w-5 h-5" />
+              <LottieIcon
+                animationData={trashAnim}
+                size={20}
+                colorFilter={LOTTIE_FILTERS.red}
+                loop
+              />
               {t('Delete Account')}
             </button>
           </motion.div>

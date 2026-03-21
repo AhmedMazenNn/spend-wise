@@ -13,6 +13,7 @@ import {
 } from '../../api/budgets'
 import type { CategoryBudget } from '../../api/budgets'
 import { useTranslation } from 'react-i18next'
+import { LoadingScreen } from '../../components/LoadingScreen'
 
 export function CategoryBudgetsPage() {
   const [loading, setLoading] = useState(true)
@@ -162,19 +163,7 @@ export function CategoryBudgetsPage() {
   }
 
   if (loading || expensesLoading) {
-    return (
-      <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
-        <Sidebar />
-        <main
-          dir={isArabic ? 'rtl' : 'ltr'}
-          className={`flex-1 w-full min-w-0 ${
-            isArabic ? 'lg:mr-64' : 'lg:ml-64'
-          } flex items-center justify-center p-4`}
-        >
-          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
-        </main>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   return (
