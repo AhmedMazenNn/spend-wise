@@ -1,0 +1,89 @@
+
+> spend-wise-frontend@0.0.0 lint
+> eslint .
+
+[BABEL] Note: The code generator has deoptimised the styling of /home/mazen/Desktop/spend-wise/frontend/src/assets/fonts/arabic-font.ts as it exceeds the max of 500KB.
+
+/home/mazen/Desktop/spend-wise/frontend/src/api/auth.ts
+  191:70  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/api/client.ts
+  27:7  error  'tk' is never reassigned. Use 'const' instead  prefer-const
+
+/home/mazen/Desktop/spend-wise/frontend/src/components/AddExpenseModal.tsx
+   66:6   warning  React Hook useEffect has a missing dependency: 'loadCategories'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   75:14  error    'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+  113:14  error    'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+  128:14  error    'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+
+/home/mazen/Desktop/spend-wise/frontend/src/components/AddIncomeModal.tsx
+  115:6   warning  React Hook useEffect has a missing dependency: 'loadCategories'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  136:14  error    'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+  162:14  error    'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+  177:14  error    'err' is defined but never used                                                                                    @typescript-eslint/no-unused-vars
+  499:73  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+  516:70  error    Unexpected any. Specify a different type                                                                           @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/components/CategoryBudgetCard.tsx
+  55:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/mazen/Desktop/spend-wise/frontend/src/components/CategoryBudgetCard.tsx:55:5
+  53 |
+  54 |   useEffect(() => {
+> 55 |     setEditValue(budget ? budget.toString() : '')
+     |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  56 |     setEditWarningThreshold(warningThreshold)
+  57 |     if (startDate) setEditStartDate(startDate.split('T')[0])
+  58 |     if (endDate) setEditEndDate(endDate.split('T')[0])  react-hooks/set-state-in-effect
+
+/home/mazen/Desktop/spend-wise/frontend/src/components/GoogleAuthButton.tsx
+  8:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/components/LottieIcon.tsx
+  52:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/mazen/Desktop/spend-wise/frontend/src/context/AuthContext.tsx
+  156:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/mazen/Desktop/spend-wise/frontend/src/context/ThemeContext.tsx
+  41:14  error  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+/home/mazen/Desktop/spend-wise/frontend/src/hooks/useExpenseData.ts
+  83:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/pages/Auth/Login.tsx
+  35:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/pages/Auth/Register.tsx
+  49:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:32  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/pages/Auth/VerifyEmailResult.tsx
+  48:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/pages/Dashboard/Home.tsx
+   30:25   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  568:70   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  568:144  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/pages/Dashboard/Income.tsx
+  930:66  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/home/mazen/Desktop/spend-wise/frontend/src/pages/Dashboard/Report.tsx
+   71:6   error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+   98:6   error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+  126:27  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+  447:6   warning  React Hook useMemo has missing dependencies: 'categoryColorMap', 'end', and 'start'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  501:13  error    'note' is never reassigned. Use 'const' instead                                                                                          prefer-const
+  529:28  error    Unexpected any. Specify a different type                                                                                                 @typescript-eslint/no-explicit-any
+
+✖ 33 problems (30 errors, 3 warnings)
+  2 errors and 0 warnings potentially fixable with the `--fix` option.
+

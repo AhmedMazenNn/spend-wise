@@ -38,7 +38,7 @@ export function CategoryBudgetsPage() {
   const loadData = useCallback(async () => {
     try {
       const [{ categories: fetchedCats }, { budgets: fetchedBudgets }] = await Promise.all([
-        fetchCategories(),
+        fetchCategories('expense'),
         fetchCategoryBudgets(),
       ])
 

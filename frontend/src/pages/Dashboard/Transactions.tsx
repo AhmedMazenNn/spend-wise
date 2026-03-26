@@ -95,7 +95,7 @@ export function TransactionsPage() {
   }, [loadExpenses])
 
   useEffect(() => {
-    fetchCategories()
+    fetchCategories('expense')
       .then((r) => setCategories(r.categories))
       .catch(() => setCategories([]))
   }, [])
