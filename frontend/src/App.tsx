@@ -21,6 +21,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import './i18n'
+import IncomePage from './pages/Dashboard/Income'
 
 const App = () => {
   const { i18n } = useTranslation()
@@ -46,6 +47,7 @@ const App = () => {
             {/* Protected Routes */}
             <Route element={<RequireAuth />}>
               <Route path="/dashboard" element={<Home />} />
+              <Route path="/income" element={<IncomePage />} />
               <Route path="/transactions" element={<Transactions />} />
               <Route path="/report" element={<Report />} />
               <Route path="/category-budgets" element={<CategoryBudgetsPage />} />

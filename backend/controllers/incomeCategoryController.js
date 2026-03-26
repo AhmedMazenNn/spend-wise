@@ -1,16 +1,16 @@
-const ExpenseCategory = require("../models/ExpenseCategory");
+const IncomeCategory = require("../models/IncomeCategory");
 
 /**
- * GET /api/categories
- * Returns all categories for expense creation
+ * GET /api/income-categories
+ * Returns all categories for income creation
  */
-async function getCategories(req, res, next) {
+async function getIncomeCategories(req, res, next) {
   try {
     const userId = req.user._id;
     const match = {
       $or: [{ userId: null }, { userId }],
     };
-    const categories = await ExpenseCategory.find(match)
+    const categories = await IncomeCategory.find(match)
       .sort({ name: 1 })
       .lean();
     return res.status(200).json({
@@ -28,16 +28,16 @@ async function getCategories(req, res, next) {
 }
 
 /**
- * PATCH /api/categories/:id
- * Allows updating user-specific categories
+ * PATCH /api/income-categories/:id
+ * Allows updating user-specific income categories
  */
-async function updateCategory(req, res, next) {
+async function updateIncomeCategory(req, res, next) {
   try {
     const userId = req.user._id;
     const { id } = req.params;
     const { name, icon, color } = req.body;
 
-    const category = await ExpenseCategory.findOne({ _id: id, userId });
+    const category = await IncomeCategory.findOne({ _id: id, userId });
     if (!category) {
       return res.status(404).json({ message: "Category not found or access denied" });
     }
@@ -62,15 +62,15 @@ async function updateCategory(req, res, next) {
 }
 
 /**
- * DELETE /api/categories/:id
- * Allows deleting user-specific categories
+ * DELETE /api/income-categories/:id
+ * Allows deleting user-specific income categories
  */
-async function deleteCategory(req, res, next) {
+async function deleteIncomeCategory(req, res, next) {
   try {
     const userId = req.user._id;
     const { id } = req.params;
 
-    const category = await ExpenseCategory.findOneAndDelete({ _id: id, userId });
+    const category = await IncomeCategory.findOneAndDelete({ _id: id, userId });
     if (!category) {
       return res.status(404).json({ message: "Category not found or access denied" });
     }
@@ -81,4 +81,4 @@ async function deleteCategory(req, res, next) {
   }
 }
 
-module.exports = { getCategories, updateCategory, deleteCategory };
+module.exports = { getIncomeCategories, updateIncomeCategory, deleteIncomeCategory };

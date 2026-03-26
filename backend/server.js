@@ -13,6 +13,8 @@ const expenseRoutes = require("./routes/expenseRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const budgetRoutes = require("./routes/budgetRoutes");
 const categoryBudgetRoutes = require("./routes/categoryBudgetRoutes");
+const incomeRoutes = require("./routes/incomeRoutes");
+const incomeCategoryRoutes = require("./routes/incomeCategoryRoutes");
 
 const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
@@ -63,6 +65,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/incomes", incomeRoutes);
+app.use("/api/income-categories", incomeCategoryRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/budgets", budgetRoutes);
 app.use("/api/category-budgets", categoryBudgetRoutes);

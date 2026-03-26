@@ -1,6 +1,6 @@
 const Expense = require("../models/Expense");
-const Category = require("../models/Category");
 const Budget = require("../models/Budget");
+const Income = require("../models/Income");
 
 /**
  * Build date range from period or custom dates
@@ -80,6 +80,32 @@ async function getDashboard(req, res, next) {
 
     const totalSpent = expenses.reduce((acc, e) => acc + e.amount, 0);
     const count = expenses.length;
+
+    const incomes = await Income.find(matchStage).lean();
+    
+    // Aggregation for accuracy
+    const incomeAgg = await Income.aggregate([
+      { $match: matchStage },
+      {
+        $group: {
+          _id: "$status",
+          total: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    const totalIncome = incomeAgg.find(a => a._id === "received")?.total || 0;
+    const pendingIncome = incomeAgg.find(a => a._id === "pending")?.total || 0;
+    const expectedIncome = incomeAgg.find(a => a._id === "expected")?.total || 0;
+
+    console.log('--- DASHBOARD AGG TOTALS ---', { 
+      totalIncome, 
+      pendingIncome, 
+      expectedIncome,
+      aggRaw: incomeAgg
+    });
+
+    const netBalance = totalIncome - totalSpent;
 
     // Days in period for daily average
     let daysInPeriod = 1;
@@ -173,8 +199,13 @@ async function getDashboard(req, res, next) {
     }
 
     return res.status(200).json({
+      version: "1.0.1-v2", // New version tag
       stats: {
         totalSpent,
+        totalIncome,
+        pendingIncome,
+        expectedIncome,
+        netBalance,
         count,
         dailyAvg,
         highest,

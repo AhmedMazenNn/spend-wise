@@ -15,6 +15,8 @@ import { fetchExpenses } from '../../api/expenses'
 import type { Expense } from '../../api/expenses'
 import { fetchCategories } from '../../api/categories'
 import type { Category } from '../../api/categories'
+import { fetchIncomes } from '../../api/incomes'
+import type { Income } from '../../api/incomes'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import * as XLSX from 'xlsx'
@@ -153,6 +155,7 @@ export function Report() {
   const [selectedDate, setSelectedDate] = useState(defaultDate)
   const [dateRange, setDateRange] = useState({ start: firstOfMonth, end: defaultEnd })
   const [expenses, setExpenses] = useState<Expense[]>([])
+  const [incomes, setIncomes] = useState<Income[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [exportDropdown, setExportDropdown] = useState(false)
@@ -165,35 +168,46 @@ export function Report() {
 
   const { start, end } = getStartEndDates(filterMode, selectedMonth, selectedDate, dateRange)
 
-  const loadExpenses = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!start || !end) {
       setLoading(false)
       setExpenses([])
+      setIncomes([])
       return
     }
 
     setLoading(true)
     try {
-      const res = await fetchExpenses({
-        period: 'custom',
-        startDate: start,
-        endDate: end,
-        limit: 5000,
-      })
-      setExpenses(res.expenses ?? [])
+      const [expRes, incRes] = await Promise.all([
+        fetchExpenses({
+          period: 'custom',
+          startDate: start,
+          endDate: end,
+          limit: 5000,
+        }),
+        fetchIncomes({
+          period: 'custom',
+          startDate: start,
+          endDate: end,
+          limit: 5000,
+        })
+      ])
+      setExpenses(expRes.expenses ?? [])
+      setIncomes(incRes.incomes ?? [])
     } catch {
       setExpenses([])
+      setIncomes([])
     } finally {
       setLoading(false)
     }
   }, [start, end])
 
   useEffect(() => {
-    loadExpenses()
-  }, [loadExpenses])
+    loadData()
+  }, [loadData])
 
   useEffect(() => {
-    fetchCategories()
+    fetchCategories('expense')
       .then((r) => setCategories(r.categories))
       .catch(() => setCategories([]))
 
@@ -212,7 +226,7 @@ export function Report() {
   // ✅ no demo fallback — only real data
   const displayExpenses = expenses
 
-  const filteredTransactions = useMemo(() => {
+  const filteredExpenses = useMemo(() => {
     let list = displayExpenses
 
     if (selectedCategory !== 'All') {
@@ -232,14 +246,46 @@ export function Report() {
     return list
   }, [displayExpenses, selectedCategory, searchTerm])
 
+  const filteredIncomes = useMemo(() => {
+    let list = incomes
+
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase()
+      list = list.filter(
+        (tx) =>
+          tx.title.toLowerCase().includes(q) ||
+          (tx.note?.toLowerCase().includes(q) ?? false) ||
+          tx.category.toLowerCase().includes(q),
+      )
+    }
+
+    return list
+  }, [incomes, searchTerm])
+
   const categoryOptions = useMemo(() => {
     const names = new Set(displayExpenses.map((e) => e.category))
     return ['All', ...Array.from(names).sort()]
   }, [displayExpenses])
 
   const stats = useMemo(() => {
-    const totalSpent = filteredTransactions.reduce((acc, curr) => acc + curr.amount, 0)
-    const count = filteredTransactions.length
+    const totalSpent = filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0)
+    
+    // Status-based income totaling
+    const receivedIncome = filteredIncomes
+      .filter(inc => inc.status === 'received')
+      .reduce((acc, curr) => acc + curr.amount, 0)
+    
+    const pendingIncome = filteredIncomes
+      .filter(inc => inc.status === 'pending')
+      .reduce((acc, curr) => acc + curr.amount, 0)
+    
+    const expectedIncome = filteredIncomes
+      .filter(inc => inc.status === 'expected')
+      .reduce((acc, curr) => acc + curr.amount, 0)
+    
+    const totalIncome = receivedIncome
+    const netBalance = totalIncome - totalSpent
+    const count = filteredExpenses.length
 
     let daysInPeriod = 1
     if (filterMode === 'month') {
@@ -255,7 +301,7 @@ export function Report() {
     const dailyAvg = totalSpent / (count > 0 ? Math.min(count, daysInPeriod) : 1)
 
     const dailyTotals: Record<string, number> = {}
-    filteredTransactions.forEach((tx) => {
+    filteredExpenses.forEach((tx) => {
       dailyTotals[tx.date] = (dailyTotals[tx.date] || 0) + tx.amount
     })
 
@@ -265,7 +311,7 @@ export function Report() {
     })
 
     const categoryTotals: Record<string, number> = {}
-    filteredTransactions.forEach((tx) => {
+    filteredExpenses.forEach((tx) => {
       categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount
     })
 
@@ -288,7 +334,7 @@ export function Report() {
     }))
 
     const dailyMap: Record<string, number> = {}
-    filteredTransactions.forEach((tx) => {
+    filteredExpenses.forEach((tx) => {
       dailyMap[tx.date] = (dailyMap[tx.date] || 0) + tx.amount
     })
 
@@ -377,6 +423,11 @@ export function Report() {
 
     return { 
       totalSpent, 
+      totalIncome,
+      receivedIncome,
+      pendingIncome,
+      expectedIncome,
+      netBalance,
       dailyAvg, 
       highestDay, 
       topCategory, 
@@ -393,7 +444,7 @@ export function Report() {
       overallThreshold,
       overallIsExpired
     }
-  }, [displayExpenses, filteredTransactions, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget, now])
+  }, [displayExpenses, filteredExpenses, filteredIncomes, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget, now])
 
 
   const handleExportPDF = async () => {
@@ -403,39 +454,35 @@ export function Report() {
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
       const margin = 20
       
-      // Use English translation function specifically for export
       const tEn = i18n.getFixedT('en')
       const enLocale = 'en-US'
 
-      // Add Arabic font support just in case names are in Arabic, but we force labels to English
       doc.addFileToVFS('Amiri-Regular.ttf', arabicFontBase64)
       doc.addFont('Amiri-Regular.ttf', 'Amiri', 'normal', 'Identity-H')
       doc.setFont('Amiri', 'normal')
 
-      // Period Label in English
       const localizedPeriodLabel = getPeriodLabel(filterMode, selectedMonth, selectedDate, dateRange, enLocale, tEn)
 
-      // Header (English)
+      // Header
       doc.setFontSize(22)
       doc.setTextColor(15, 23, 42)
-      doc.text(fixArabic(tEn('Expense Report')), margin, 20)
+      doc.text(fixArabic(tEn('Financial Report')), margin, 20)
 
       doc.setFontSize(10)
       doc.setTextColor(100, 116, 139)
       doc.text(fixArabic(`${tEn('Period')}: ${localizedPeriodLabel}`), margin, 28)
       doc.text(fixArabic(`${tEn('Generated on')}: ${new Date().toLocaleDateString(enLocale)}`), margin, 34)
 
-      // Summary Stats
+      // Financial Summary Rect
       doc.setFillColor(248, 250, 252)
       doc.roundedRect(margin, 45, 170, 30, 3, 3, 'F')
       
-      const statsX = [margin + 10, margin + 55, margin + 100, margin + 145]
-      const labels = [tEn('Total Spent'), tEn('Daily Average'), tEn('Active Budget'), tEn('Remaining Budget')]
+      const statsX = [margin + 10, margin + 65, margin + 120]
+      const labels = [tEn('Total Income'), tEn('Total Spent'), tEn('Net Balance')]
       const values = [
+        `$${stats.totalIncome.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
         `$${stats.totalSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
-        `$${stats.dailyAvg.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
-        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString(enLocale)}` : tEn('None'),
-        stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetRemaining.toLocaleString(enLocale)}` : '-'
+        `$${stats.netBalance.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`
       ]
 
       doc.setFontSize(9)
@@ -444,73 +491,67 @@ export function Report() {
         doc.text(fixArabic(label), statsX[i], 55)
         doc.setTextColor(15, 23, 42)
         doc.setFontSize(11)
-        
-        let val = values[i];
-        if (i === 2 && stats.overallStatus === 'Inactive') {
-          val += ` (${fixArabic(tEn('Inactive'))})`;
-        }
-        doc.text(fixArabic(val), statsX[i], 63)
-        doc.setFontSize(9)
+        doc.text(fixArabic(values[i]), statsX[i], 63)
       })
 
-      if (stats.overallBudgetLimit > 0) {
-        doc.setFontSize(7)
-        doc.setTextColor(100, 116, 139)
-        const budgetDates = `${new Date(stats.overallBudgetStart!).toLocaleDateString(enLocale)} - ${new Date(stats.overallBudgetEnd!).toLocaleDateString(enLocale)}`
-        doc.text(fixArabic(`${tEn('Period')}: ${budgetDates}`), statsX[2], 68)
-        doc.text(fixArabic(`${tEn('Threshold')}: ${stats.overallThreshold}%`), statsX[2], 71)
-        
-        if (stats.overallStatus === 'Inactive') {
-          doc.setTextColor(239, 68, 68) // red-500
-          doc.setFontSize(8)
-          doc.text(fixArabic(tEn('Note: This budget is now INACTIVE and will not track new expenses.')), statsX[2], 75)
-        }
+      // Pending/Expected Note
+      if (stats.pendingIncome > 0 || stats.expectedIncome > 0) {
+        doc.setFontSize(8)
+        doc.setTextColor(148, 163, 184)
+        let note = []
+        if (stats.pendingIncome > 0) note.push(`$${stats.pendingIncome.toLocaleString(enLocale)} ${tEn('pending')}`)
+        if (stats.expectedIncome > 0) note.push(`$${stats.expectedIncome.toLocaleString(enLocale)} ${tEn('expected')}`)
+        doc.text(fixArabic(note.join('  •  ')), margin + 10, 71)
       }
 
-      // Category Breakdown Table
-      const catY = 85 // Safe starting value after summary rect
+      // --- INCOMES TABLE (if any) ---
+      let currentY = 85
+      if (filteredIncomes.length > 0) {
+        doc.setFontSize(14)
+        doc.setTextColor(15, 23, 42)
+        doc.text(fixArabic(tEn('Incomes')), margin, currentY)
+
+        autoTable(doc, {
+          startY: currentY + 5,
+          head: [[tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Status')].map(fixArabic)],
+          body: filteredIncomes.map((inc: Income) => [
+            new Date(inc.date).toLocaleDateString(enLocale),
+            fixArabic(inc.title),
+            fixArabic(tEn(inc.category)),
+            `+$${inc.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+            fixArabic(tEn(inc.status)),
+          ]),
+          headStyles: { fillColor: [16, 185, 129], font: 'Amiri' },
+          bodyStyles: { font: 'Amiri' },
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 9 },
+        })
+        currentY = (doc as any).lastAutoTable.finalY + 15
+      }
+
+      // --- EXPENSES TABLE ---
+      if (currentY > 240) {
+        doc.addPage()
+        currentY = 20
+      }
       doc.setFontSize(14)
-      doc.text(fixArabic(tEn('Category Breakdown')), margin, catY)
+      doc.setTextColor(15, 23, 42)
+      doc.text(fixArabic(tEn('Expenses')), margin, currentY)
 
       autoTable(doc, {
-        startY: catY + 5,
-        head: [[tEn('Category'), tEn('Amount'), tEn('Percentage'), tEn('Status'), tEn('Threshold')].map(fixArabic)],
-        body: stats.categoryList.map((cat) => {
-          const budget = stats.budgetPerformance.find(b => b.name === cat.name);
-          return [
-            fixArabic(tEn(cat.name)), 
-            `$${cat.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`, 
-            `${cat.percentage.toFixed(1)}%`,
-            fixArabic(budget ? tEn(budget.status) : tEn('None')),
-            budget ? `${budget.warningThreshold}%` : '-'
-          ];
-        }),
-        headStyles: { fillColor: [16, 185, 129], font: 'Amiri' },
-        styles: { font: 'Amiri' },
-        margin: { left: margin, right: margin }
-      })
-
-      // Transaction Table
-      const finalY = (doc as any).lastAutoTable?.finalY || (catY + 40)
-      doc.setFontSize(14)
-      doc.text(fixArabic(tEn('Transactions')), margin, finalY + 15)
-
-      autoTable(doc, {
-        startY: finalY + 5,
+        startY: currentY + 5,
         head: [[tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Note')].map(fixArabic)],
-        body: filteredTransactions.map((tx) => [
+        body: filteredExpenses.map((tx: Expense) => [
           new Date(tx.date).toLocaleDateString(enLocale),
           fixArabic(tx.title),
           fixArabic(tEn(tx.category)),
           `$${tx.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
-          fixArabic(tx.note || '')
+          fixArabic(tx.note || ''),
         ]),
-        headStyles: { fillColor: [71, 85, 105], font: 'Amiri' },
-        styles: { font: 'Amiri' },
-        columnStyles: {
-          4: { cellWidth: 40 } // Give more space to notes
-        },
-        margin: { left: margin, right: margin }
+        headStyles: { fillColor: [15, 23, 42], textColor: 255, font: 'Amiri' },
+        bodyStyles: { font: 'Amiri' },
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 9 },
       })
 
       const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, tEn, 'pdf')
@@ -540,8 +581,13 @@ export function Report() {
         [tEn('Generated on'), new Date().toLocaleString(enLocale)],
         [],
         [tEn('Summary Statistics'), ''],
+        [tEn('Total Income'), stats.totalIncome],
         [tEn('Total Spent'), stats.totalSpent],
+        [tEn('Net Balance'), stats.netBalance],
         [tEn('Daily Average'), stats.dailyAvg],
+        [tEn('Pending Income'), stats.pendingIncome],
+        [tEn('Expected Income'), stats.expectedIncome],
+        [],
         [tEn('Overall Budget'), stats.overallBudgetLimit > 0 ? `${stats.overallBudgetRemaining.toLocaleString(enLocale)} ${tEn('remaining of')} ${stats.overallBudgetLimit.toLocaleString(enLocale)}` : tEn('None')],
         [tEn('Overall Budget Status'), tEn(stats.overallStatus)],
         [tEn('Overall Budget Warning Threshold'), stats.overallBudgetLimit > 0 ? `${stats.overallThreshold}%` : '-'],
@@ -552,9 +598,9 @@ export function Report() {
         ...(stats.overallStatus === 'Inactive' ? [[tEn('Note'), tEn('This budget is now INACTIVE and will not track new expenses.')]] : []),
       ]
 
-      // 2. Transactions data
-      const transactionsHeader = [tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Note')]
-      const transactionsRows = filteredTransactions.map((tx) => [
+      // 2. Expenses data
+      const expensesHeader = [tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Note')]
+      const expensesRows = filteredExpenses.map((tx: Expense) => [
         new Date(tx.date).toLocaleDateString(enLocale),
         tx.title,
         tEn(tx.category),
@@ -562,15 +608,22 @@ export function Report() {
         tx.note || '',
       ])
 
+      // 3. Incomes data
+      const incomesHeader = [tEn('Date'), tEn('Title'), tEn('Category'), tEn('Amount'), tEn('Status')]
+      const incomesRows = filteredIncomes.map((inc: Income) => [
+        new Date(inc.date).toLocaleDateString(enLocale),
+        inc.title,
+        tEn(inc.category),
+        inc.amount,
+        tEn(inc.status),
+      ])
+
       const wb = XLSX.utils.book_new()
-      
-      const wsOverview = XLSX.utils.aoa_to_sheet([overviewHeader, ...overviewData])
-      XLSX.utils.book_append_sheet(wb, wsOverview, tEn('Overview'))
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([overviewHeader, ...overviewData]), tEn('Overview'))
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([expensesHeader, ...expensesRows]), tEn('Expenses'))
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([incomesHeader, ...incomesRows]), tEn('Incomes'))
 
-      const wsTransactions = XLSX.utils.aoa_to_sheet([transactionsHeader, ...transactionsRows])
-      XLSX.utils.book_append_sheet(wb, wsTransactions, tEn('Transactions'))
-
-      // 3. Category Breakdown sheet
+      // 4. Category Breakdown sheet
       const catHeader = [tEn('Category'), tEn('Amount'), tEn('Percentage')]
       const catRows = stats.categoryList.map(c => [tEn(c.name), c.amount, `${c.percentage.toFixed(1)}%`])
       const wsCategories = XLSX.utils.aoa_to_sheet([catHeader, ...catRows])
@@ -736,31 +789,36 @@ export function Report() {
               variants={containerVariants}
               className="space-y-8"
             >
-              {/* Summary Stats */}
+                    {/* Financial Summary */}
               <motion.div variants={itemVariants} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {[
                   {
+                    label: t('Total Income'),
+                    value: `$${stats.totalIncome.toLocaleString(locale, { minimumFractionDigits: 2 })}`,
+                    color: 'text-emerald-600 dark:text-emerald-400',
+                    sub: stats.pendingIncome > 0 || stats.expectedIncome > 0 ? (
+                      <div className="text-[10px] mt-1 text-slate-400 font-normal leading-relaxed">
+                        {stats.pendingIncome > 0 && <div>${stats.pendingIncome.toLocaleString(locale)} {t('pending')}</div>}
+                        {stats.expectedIncome > 0 && <div>${stats.expectedIncome.toLocaleString(locale)} {t('expected')}</div>}
+                      </div>
+                    ) : null
+                  },
+                  {
                     label: t('Total Spent'),
                     value: `$${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2 })}`,
-                    color: 'text-slate-900 dark:text-white',
+                    color: 'text-rose-600 dark:text-rose-400',
                   },
                   {
-                    label: t('Daily Average'),
-                    value: `$${stats.dailyAvg.toLocaleString(locale, { maximumFractionDigits: 2 })}`,
-                    color: 'text-slate-900 dark:text-white',
-                  },
-                  {
-                    label: t('Top Category'),
-                    value: stats.topCategory ? t(stats.topCategory.name) : '-',
-                    sub: stats.topCategory ? `$${stats.topCategory.amount.toLocaleString(locale)}` : null,
-                    color: 'text-emerald-600',
+                    label: t('Net Balance'),
+                    value: `$${stats.netBalance.toLocaleString(locale, { minimumFractionDigits: 2 })}`,
+                    color: stats.netBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400',
                   },
                 ].map((stat, i) => (
                   <div key={i} className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl p-6 rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50">
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-2">{stat.label}</p>
-                    <div className="flex items-baseline gap-2">
+                    <div className="flex flex-col">
                       <h3 className={`text-2xl font-bold font-heading ${stat.color}`}>{stat.value}</h3>
-                      {stat.sub && <span className="text-sm text-slate-400 font-medium">{stat.sub}</span>}
+                      {stat.sub}
                     </div>
                   </div>
                 ))}
@@ -1020,7 +1078,7 @@ export function Report() {
 
                 <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50 overflow-hidden">
                   <div className="divide-y divide-slate-200 dark:divide-slate-700/50 max-h-[400px] overflow-y-auto">
-                    {filteredTransactions.map((tx) => (
+                    {filteredExpenses.map((tx) => (
                       <div key={tx.id} className="flex items-center gap-4 p-4 hover:bg-emerald-50/50 dark:hover:bg-slate-700/50 transition-colors">
                         <div
                           className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0"
@@ -1050,12 +1108,64 @@ export function Report() {
                     ))}
                   </div>
 
-                  {filteredTransactions.length === 0 && (
+                  {filteredExpenses.length === 0 && (
                     <div className="text-center py-12 text-slate-500 dark:text-slate-400">
                       {displayExpenses.length === 0 ? t('No expenses found for this period.') : t('No transactions match your filters.')}
                     </div>
                   )}
                 </div>
+
+                {/* Incomes Section */}
+                {filteredIncomes.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 pt-4">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-200 dark:border-emerald-500/20">
+                         <div className="text-xl">💰</div>
+                      </div>
+                      <h2 className="text-xl font-bold font-heading text-slate-800 dark:text-white">
+                        {t('Incomes')}
+                      </h2>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-800/80 dark:backdrop-blur-xl rounded-2xl shadow-lg shadow-slate-200/50 dark:shadow-none border border-slate-200/80 dark:border-slate-700/50 overflow-hidden">
+                      <div className="divide-y divide-slate-200 dark:divide-slate-700/50 max-h-[400px] overflow-y-auto">
+                        {filteredIncomes.map((inc) => (
+                          <div key={inc.id} className="flex items-center gap-4 p-4 hover:bg-emerald-50/50 dark:hover:bg-slate-700/50 transition-colors">
+                            <div
+                              className="w-11 h-11 rounded-full flex items-center justify-center text-lg flex-shrink-0"
+                              style={{ 
+                                backgroundColor: inc.categoryColor ? `${inc.categoryColor}33` : '#10B98133', 
+                                color: inc.categoryColor || '#10B981' 
+                              }}
+                            >
+                              {inc.emoji || '✨'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-slate-900 dark:text-white truncate">{inc.title}</h4>
+                              <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+                                <Calendar className="w-3.5 h-3.5" />
+                                {new Date(inc.date).toLocaleDateString(locale)}
+                                <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs">{t(inc.category)}</span>
+                              </div>
+                            </div>
+                            <div className="text-right flex flex-col items-end flex-shrink-0">
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                                +${inc.amount.toLocaleString(locale, { minimumFractionDigits: 2 })}
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full mt-1 ${
+                                inc.status === 'received' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                inc.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400' :
+                                'bg-slate-100 text-slate-700 dark:bg-slate-500/20 dark:text-slate-400'
+                              }`}>
+                                {t(inc.status)}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </motion.div>
             </motion.div>
           )}

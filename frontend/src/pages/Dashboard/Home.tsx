@@ -20,6 +20,7 @@ import Sidebar from '../../components/Sidebar'
 import { AddExpenseModal } from '../../components/AddExpenseModal'
 import Onboarding from '../../components/Onboarding'
 import { useExpenseData, type TimePeriod } from '../../hooks/useExpenseData'
+import { type DashboardStats } from '../../api/dashboard'
 import { getStoredUser } from '../../api/auth'
 import { setBudget, removeBudget } from '../../api/budgets'
 import { LoadingScreen } from '../../components/LoadingScreen'
@@ -164,12 +165,16 @@ function Home() {
     visible: { y: 0, opacity: 1 },
   }
 
-  const stats = data?.stats ?? {
+  const stats: DashboardStats = data?.stats ?? {
     totalSpent: 0,
+    totalIncome: 0,
+    pendingIncome: 0,
+    expectedIncome: 0,
+    netBalance: 0,
     count: 0,
     dailyAvg: 0,
     highest: 0,
-    topCategory: null as string | null,
+    topCategory: null,
   }
 
   const dailySpending = data?.dailySpending ?? []
@@ -560,15 +565,50 @@ function Home() {
               <div className="relative flex h-full flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8 dark:border-slate-700/50 dark:bg-slate-800/80 dark:backdrop-blur-xl">
                 <div>
                   <p className="text-sm font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {t('Spent')}: {getPeriodLabel()}
+                    {t('Net Balance')}: {getPeriodLabel()} {(data as any)?.version && <span className="text-[10px] opacity-30 ml-2">({(data as any).version})</span>}
                   </p>
-                  <h2 className="mt-4 break-words text-4xl sm:text-5xl font-bold font-heading text-slate-900 dark:text-white">
-                    $
-                    {stats.totalSpent.toLocaleString(locale, {
+                  <h2 className={`mt-4 break-words text-4xl sm:text-5xl font-bold font-heading ${stats.netBalance >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    ${stats.netBalance >= 0 ? stats.netBalance.toLocaleString(locale, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    }) : Math.abs(stats.netBalance).toLocaleString(locale, {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
                   </h2>
+                </div>
+
+                <div className="mt-6 flex flex-col gap-3 relative z-10 w-full sm:w-2/3">
+                  <div className="flex flex-col gap-1 border-b border-slate-100 dark:border-slate-700 pb-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-500 dark:text-slate-400">{t('Income')}</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        +${stats.totalIncome.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {stats.pendingIncome > 0 && (
+                      <div className="flex items-center justify-between opacity-70">
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{t('Pending')}</span>
+                        <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                          +${stats.pendingIncome.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                    {stats.expectedIncome > 0 && (
+                      <div className="flex items-center justify-between opacity-70">
+                        <span className="text-xs text-slate-400 dark:text-slate-500">{t('Expected')}</span>
+                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                          +${stats.expectedIncome.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-slate-500 dark:text-slate-400">{t('Expenses')}</span>
+                    <span className="font-bold text-red-600 dark:text-red-400">
+                      -${stats.totalSpent.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
 
                 <div className="mt-6 flex items-center gap-2">
