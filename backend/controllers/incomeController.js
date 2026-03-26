@@ -1,55 +1,62 @@
-const Expense = require("../models/Expense");
+const Income = require("../models/Income");
 
 /**
- * POST /api/expenses
- * Body: { amount, title, note?, date, categoryId }
+ * POST /api/incomes
  */
-async function createExpense(req, res, next) {
+async function createIncome(req, res, next) {
   try {
-      const { amount, title, note, date, categoryId, categoryName, categoryIcon, categoryColor } = req.body;
-      const userId = req.user._id;
-  
-      let finalCategoryId = categoryId;
-  
-      if (categoryId === "other" && categoryName) {
-        const trimmedName = categoryName.trim();
-        let customCat = await require("../models/ExpenseCategory").findOne({
-          name: { $regex: new RegExp(`^${trimmedName}$`, "i") },
-          $or: [{ userId: null }, { userId }],
+    const { amount, title, note, date, categoryId, categoryName, categoryIcon, categoryColor, frequency, status } = req.body;
+    const userId = req.user._id;
+
+    let finalCategoryId = categoryId;
+
+    if (categoryId === "other" && categoryName) {
+      const trimmedName = categoryName.trim();
+      let customCat = await require("../models/IncomeCategory").findOne({
+        name: { $regex: new RegExp(`^${trimmedName}$`, "i") },
+        $or: [{ userId: null }, { userId }],
+      });
+
+      if (!customCat) {
+        customCat = await require("../models/IncomeCategory").create({
+          name: trimmedName,
+          userId,
+          icon: categoryIcon || "✨",
+          color: categoryColor || "#10B981",
         });
-  
-        if (!customCat) {
-          customCat = await require("../models/ExpenseCategory").create({
-            name: trimmedName,
-            userId,
-            icon: categoryIcon || "📦",
-            color: categoryColor || "#10B981",
-          });
-        }
+      }
       finalCategoryId = customCat._id;
     }
 
-    const expense = await Expense.create({
+    const income = await Income.create({
       userId,
       categoryId: finalCategoryId,
       amount: Number(amount),
       title: title?.trim() || "Untitled",
-      note: note || null,
+      category: categoryName || "Other", // fallback for legacy
+      emoji: categoryIcon || "✨", // fallback for legacy
       date: date ? new Date(date) : new Date(),
+      frequency: frequency || "one-time",
+      note: note || null,
+      status: status || "received"
     });
 
-    const populated = await Expense.findById(expense._id)
+    const populated = await Income.findById(income._id)
       .populate("categoryId", "name icon color")
       .lean();
 
     return res.status(201).json({
-      expense: {
+      income: {
         id: populated._id,
         amount: populated.amount,
         title: populated.title,
-        category: populated.categoryId?.name || "Uncategorized",
+        category: populated.categoryId?.name || populated.category,
+        emoji: populated.categoryId?.icon || populated.emoji,
+        categoryId: populated.categoryId?._id,
         date: new Date(populated.date).toISOString().split("T")[0],
-        emoji: populated.categoryId?.icon || "📦",
+        frequency: populated.frequency,
+        status: populated.status,
+        note: populated.note
       },
     });
   } catch (err) {
@@ -58,10 +65,9 @@ async function createExpense(req, res, next) {
 }
 
 /**
- * GET /api/expenses
- * Query: limit, offset, period, startDate, endDate
+ * GET /api/incomes
  */
-async function getExpenses(req, res, next) {
+async function getIncomes(req, res, next) {
   try {
     const userId = req.user._id;
     const limit = Math.min(parseInt(req.query.limit) || 20, 5000);
@@ -99,50 +105,56 @@ async function getExpenses(req, res, next) {
       match.date = { $gte: monthAgo };
     }
 
-    const [expenses, total] = await Promise.all([
-      Expense.find(match)
+    const [incomes, total] = await Promise.all([
+      Income.find(match)
         .populate("categoryId", "name icon color")
         .sort({ date: -1 })
         .skip(offset)
         .limit(limit)
         .lean(),
-      Expense.countDocuments(match),
+      Income.countDocuments(match),
     ]);
 
-    const items = expenses.map((e) => ({
+    const items = incomes.map((e) => ({
       id: e._id,
       amount: e.amount,
       title: e.title,
-      note: e.note,
-      category: e.categoryId?.name || "Uncategorized",
+      category: e.categoryId?.name || e.category,
+      categoryColor: e.categoryId?.color,
       categoryId: e.categoryId?._id,
+      emoji: e.categoryId?.icon || e.emoji,
       date: new Date(e.date).toISOString().split("T")[0],
-      emoji: e.categoryId?.icon || "📦",
+      frequency: e.frequency,
+      status: e.status,
+      note: e.note
     }));
 
-    return res.status(200).json({ expenses: items, total });
+    return res.status(200).json({ incomes: items, total });
   } catch (err) {
     next(err);
   }
 }
 
 /**
- * PATCH /api/expenses/:id
+ * PATCH /api/incomes/:id
  */
-async function updateExpense(req, res, next) {
+async function updateIncome(req, res, next) {
   try {
     const userId = req.user._id;
     const { id } = req.params;
-    const { amount, title, note, date, categoryId } = req.body;
+    const { amount, title, note, date, category, emoji, frequency, status } = req.body;
 
     const update = {};
     if (amount != null) update.amount = Number(amount);
     if (title != null) update.title = String(title).trim() || "Untitled";
     if (note !== undefined) update.note = note || null;
     if (date != null) update.date = new Date(date);
-    if (categoryId != null) update.categoryId = categoryId;
+    if (category != null) update.category = category;
+    if (emoji != null) update.emoji = emoji;
+    if (frequency != null) update.frequency = frequency;
+    if (status != null) update.status = status;
 
-    const expense = await Expense.findOneAndUpdate(
+    const income = await Income.findOneAndUpdate(
       { _id: id, userId },
       { $set: update },
       { new: true }
@@ -150,20 +162,22 @@ async function updateExpense(req, res, next) {
       .populate("categoryId", "name icon color")
       .lean();
 
-    if (!expense) {
-      return res.status(404).json({ message: "Expense not found" });
+    if (!income) {
+      return res.status(404).json({ message: "Income not found" });
     }
 
     return res.status(200).json({
-      expense: {
-        id: expense._id,
-        amount: expense.amount,
-        title: expense.title,
-        note: expense.note,
-        category: expense.categoryId?.name || "Uncategorized",
-        categoryId: expense.categoryId?._id,
-        date: new Date(expense.date).toISOString().split("T")[0],
-        emoji: expense.categoryId?.icon || "📦",
+      income: {
+        id: income._id,
+        amount: income.amount,
+        title: income.title,
+        category: income.categoryId?.name || income.category,
+        emoji: income.categoryId?.icon || income.emoji,
+        categoryId: income.categoryId?._id,
+        date: new Date(income.date).toISOString().split("T")[0],
+        frequency: income.frequency,
+        status: income.status,
+        note: income.note
       },
     });
   } catch (err) {
@@ -172,29 +186,27 @@ async function updateExpense(req, res, next) {
 }
 
 /**
- * DELETE /api/expenses/:id
+ * DELETE /api/incomes/:id
  */
-async function deleteExpense(req, res, next) {
+async function deleteIncome(req, res, next) {
   try {
     const userId = req.user._id;
     const { id } = req.params;
 
-    const deleted = await Expense.findOneAndDelete({ _id: id, userId });
+    const deleted = await Income.findOneAndDelete({ _id: id, userId });
     if (!deleted) {
-      return res.status(404).json({ message: "Expense not found" });
+      return res.status(404).json({ message: "Income not found" });
     }
-    return res.status(200).json({ message: "Expense deleted" });
+    return res.status(200).json({ message: "Income deleted" });
   } catch (err) {
     next(err);
   }
 }
 
 /**
- * GET /api/expenses/export
- * Query: period, startDate, endDate, search
- * Returns CSV file
+ * GET /api/incomes/export
  */
-async function exportExpenses(req, res, next) {
+async function exportIncomes(req, res, next) {
   try {
     const userId = req.user._id;
     const period = (req.query.period || "all").toLowerCase();
@@ -230,10 +242,7 @@ async function exportExpenses(req, res, next) {
       match.date = { $gte: monthAgo };
     }
 
-    const expenses = await Expense.find(match)
-      .populate("categoryId", "name")
-      .sort({ date: -1 })
-      .lean();
+    const incomes = await Income.find(match).sort({ date: -1 }).lean();
 
     const escapeCsv = (v) => {
       const s = String(v ?? "");
@@ -243,26 +252,27 @@ async function exportExpenses(req, res, next) {
       return s;
     };
 
-    const header = "Date,Title,Category,Amount,Note";
-    const rows = expenses.map((e) =>
+    const header = "Date,Title,Category,Status,Frequency,Amount,Note";
+    const rows = incomes.map((e) =>
       [
         new Date(e.date).toISOString().split("T")[0],
         escapeCsv(e.title),
-        escapeCsv(e.categoryId?.name || "Uncategorized"),
+        escapeCsv(e.category),
+        escapeCsv(e.status),
+        escapeCsv(e.frequency),
         e.amount,
         escapeCsv(e.note || ""),
       ].join(",")
     );
     const csv = [header, ...rows].join("\n");
 
-    // Use UTF-16LE with BOM for best Excel compatibility with Arabic
     const bom = Buffer.from([0xFF, 0xFE]);
     const csvBuffer = Buffer.from(csv, "utf16le");
 
     res.setHeader("Content-Type", "text/csv; charset=utf-16le");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename="expenses-${new Date().toISOString().split("T")[0]}.csv"`
+      `attachment; filename="incomes-${new Date().toISOString().split("T")[0]}.csv"`
     );
     return res.send(Buffer.concat([bom, csvBuffer]));
   } catch (err) {
@@ -271,9 +281,9 @@ async function exportExpenses(req, res, next) {
 }
 
 module.exports = {
-  createExpense,
-  getExpenses,
-  updateExpense,
-  deleteExpense,
-  exportExpenses,
+  createIncome,
+  getIncomes,
+  updateIncome,
+  deleteIncome,
+  exportIncomes,
 };

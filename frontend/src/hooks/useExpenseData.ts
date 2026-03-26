@@ -34,12 +34,22 @@ export function useExpenseData(
   selectedMonth?: string,
 ) {
   const [data, setData] = useState<{
-    stats: { totalSpent: number; count: number; dailyAvg: number; highest: number; topCategory: string | null }
+    stats: { 
+      totalSpent: number; 
+      totalIncome: number; 
+      pendingIncome: number;
+      expectedIncome: number;
+      netBalance: number; 
+      count: number; 
+      dailyAvg: number; 
+      highest: number; 
+      topCategory: string | null 
+    }
     dailySpending: { date: string; amount: number }[]
     categoryData: { name: string; value: number; color: string }[]
     transactions: {
-      color: any; id: string; amount: number; title: string; category: string; date: string; emoji: string
-}[]
+      id: string; amount: number; title: string; category: string; color: string; date: string; emoji: string
+    }[]
     activeBudget: Budget | null
     budgetStats: BudgetStats | null
   } | null>(null)
@@ -70,7 +80,15 @@ export function useExpenseData(
         stats: res.stats,
         dailySpending: res.dailySpending,
         categoryData: res.categoryData,
-        transactions: res.recentExpenses,
+        transactions: (res.recentExpenses ?? []).map((e: any) => ({
+          id: e.id,
+          amount: e.amount,
+          title: e.title,
+          category: e.category,
+          color: e.color,
+          date: e.date,
+          emoji: e.emoji,
+        })),
         activeBudget: res.activeBudget
           ? {
               id: res.activeBudget.id,

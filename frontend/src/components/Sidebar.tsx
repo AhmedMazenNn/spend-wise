@@ -17,6 +17,7 @@ import { useTheme } from '../context/ThemeContext'
 import { LottieIcon, LOTTIE_FILTERS } from './LottieIcon'
 import dashboardAnim from '../assets/dashboard-icon.json'
 import transactionsAnim from '../assets/transactions-icon.json'
+import incomeAnim from '../assets/income-icon.json'
 import reportAnim from '../assets/report-icon.json'
 import categoryBudgetAnim from '../assets/category-budget-icon.json'
 import settingsAnim from '../assets/settings-icon.json'
@@ -35,6 +36,7 @@ export function Sidebar() {
 
   const navItems = [
     { name: t('Dashboard'), anim: dashboardAnim, path: '/dashboard' },
+    { name: t('Income'), anim: incomeAnim, path: '/income' },
     { name: t('Transactions'), anim: transactionsAnim, path: '/transactions' },
     { name: t('Report'), anim: reportAnim, path: '/report' },
     { name: t('Category Budgets'), anim: categoryBudgetAnim, path: '/category-budgets' },
@@ -103,7 +105,7 @@ export function Sidebar() {
 
           <div className={`flex items-center gap-2 min-w-0 ${isArabic ? 'flex-row-reverse' : ''}`}>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
-              💸
+              <LottieIcon animationData={incomeAnim} isActive={true} size={20} colorFilter={LOTTIE_FILTERS.white} />
             </div>
             <span className={`font-bold font-heading truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               {t('SpendWise')}
@@ -129,7 +131,7 @@ export function Sidebar() {
         <div className="p-8">
           <div className={`flex items-center gap-3 ${isArabic ? 'flex-row-reverse justify-end text-right' : ''}`}>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
-              💸
+              <LottieIcon animationData={incomeAnim} isActive={true} size={20} colorFilter={LOTTIE_FILTERS.white} />
             </div>
             <h1 className="text-xl font-bold font-heading tracking-tight">
               {t('SpendWise')}
@@ -294,7 +296,7 @@ export function Sidebar() {
               >
                 <div className={`flex items-center gap-3 min-w-0 ${isArabic ? 'flex-row-reverse text-right' : ''}`}>
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-lg shadow-glow">
-                    💸
+                    <LottieIcon animationData={incomeAnim} isActive={true} size={20} colorFilter={LOTTIE_FILTERS.white} />
                   </div>
                   <h1 className="text-lg font-bold font-heading tracking-tight truncate">
                     {t('SpendWise')}

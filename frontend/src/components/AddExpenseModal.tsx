@@ -67,7 +67,7 @@ export function AddExpenseModal({
 
   const loadCategories = async () => {
     try {
-      const res = await fetchCategories()
+      const res = await fetchCategories('expense')
       setCategories(res.categories)
       if (res.categories.length > 0 && !categoryId) {
         setCategoryId(res.categories[0].id)
@@ -103,7 +103,7 @@ export function AddExpenseModal({
     if (!editingCategoryId || !editName.trim()) return
     setLoading(true)
     try {
-      await updateCategory(editingCategoryId, {
+      await updateCategory(editingCategoryId, 'expense', {
         name: editName.trim(),
         icon: editIcon,
         color: editColor,
@@ -121,7 +121,7 @@ export function AddExpenseModal({
     if (!editingCategoryId || !window.confirm(t('Are you sure you want to delete this category?'))) return
     setLoading(true)
     try {
-      await deleteCategory(editingCategoryId)
+      await deleteCategory(editingCategoryId, 'expense')
       await loadCategories()
       setEditingCategoryId(null)
       setCategoryId(categories[0]?.id || '')

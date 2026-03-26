@@ -5,9 +5,10 @@
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
 const mongoose = require("mongoose");
-const Category = require("../models/Category");
+const ExpenseCategory = require("../models/ExpenseCategory");
+const IncomeCategory = require("../models/IncomeCategory");
 
-const defaultCategories = [
+const defaultExpenseCategories = [
   { name: "Food", icon: "🍕", color: "#F59E0B" },
   { name: "Transport", icon: "🚗", color: "#3B82F6" },
   { name: "Shopping", icon: "🛍️", color: "#EC4899" },
@@ -16,16 +17,34 @@ const defaultCategories = [
   { name: "Health", icon: "💊", color: "#059669" },
 ];
 
+const defaultIncomeCategories = [
+  { name: "Salary", icon: "💰", color: "#10B981" },
+  { name: "Investments", icon: "📈", color: "#3B82F6" },
+  { name: "Freelance", icon: "💻", color: "#8B5CF6" },
+];
+
 async function seed() {
   try {
     await mongoose.connect(process.env.MONGODB_URI);
-    for (const cat of defaultCategories) {
-      await Category.findOneAndUpdate(
-        { name: cat.name },
-        { $setOnInsert: cat },
+    
+    // Seed Expense Categories
+    for (const cat of defaultExpenseCategories) {
+      await ExpenseCategory.findOneAndUpdate(
+        { name: cat.name, userId: null },
+        { $setOnInsert: { ...cat, userId: null } },
         { upsert: true }
       );
     }
+    
+    // Seed Income Categories
+    for (const cat of defaultIncomeCategories) {
+      await IncomeCategory.findOneAndUpdate(
+        { name: cat.name, userId: null },
+        { $setOnInsert: { ...cat, userId: null } },
+        { upsert: true }
+      );
+    }
+    
     console.log("✅ Categories seeded successfully");
   } catch (err) {
     console.error("❌ Seed failed:", err.message);

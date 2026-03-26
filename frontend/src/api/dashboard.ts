@@ -4,6 +4,10 @@ export type DashboardPeriod = 'today' | 'week' | 'month' | 'all' | 'custom'
 
 export interface DashboardStats {
   totalSpent: number
+  totalIncome: number
+  pendingIncome: number
+  expectedIncome: number
+  netBalance: number
   count: number
   dailyAvg: number
   highest: number

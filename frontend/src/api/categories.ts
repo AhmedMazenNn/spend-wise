@@ -8,24 +8,28 @@ export interface Category {
   isCustom: boolean
 }
 
-export async function fetchCategories(): Promise<{ categories: Category[] }> {
-  return apiRequest<{ categories: Category[] }>('/api/categories', {
+export async function fetchCategories(type: 'expense' | 'income'): Promise<{ categories: Category[] }> {
+  const url = type === 'income' ? '/api/income-categories' : '/api/categories'
+  return apiRequest<{ categories: Category[] }>(url, {
     method: 'GET',
   })
 }
 
 export async function updateCategory(
   id: string,
+  type: 'expense' | 'income',
   data: { name?: string; icon?: string; color?: string },
 ): Promise<{ category: Category }> {
-  return apiRequest<{ category: Category }>(`/api/categories/${id}`, {
+  const url = type === 'income' ? `/api/income-categories/${id}` : `/api/categories/${id}`
+  return apiRequest<{ category: Category }>(url, {
     method: 'PATCH',
     body: JSON.stringify(data),
   })
 }
 
-export async function deleteCategory(id: string): Promise<{ message: string }> {
-  return apiRequest<{ message: string }>(`/api/categories/${id}`, {
+export async function deleteCategory(id: string, type: 'expense' | 'income'): Promise<{ message: string }> {
+  const url = type === 'income' ? `/api/income-categories/${id}` : `/api/categories/${id}`
+  return apiRequest<{ message: string }>(url, {
     method: 'DELETE',
   })
 }
