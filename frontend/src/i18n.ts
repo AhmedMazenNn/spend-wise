@@ -536,6 +536,7 @@ const resources = {
       "Email Verified!": "تم التحقق من البريد الإلكتروني!",
       "Success!": "تم بنجاح!",
       "Your email has been successfully verified. You can now access all features.": "تم التحقق من بريدك الإلكتروني بنجاح. يمكنك الآن الوصول إلى جميع الميزات.",
+      "Date Warning": "تحذير بشأن التاريخ",
       "Verification Failed": "فشل التحقق",
       "Oops!": "عذراً!",
       "Track Your Income": "تتبع دخلك",
