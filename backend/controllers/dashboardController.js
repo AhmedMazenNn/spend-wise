@@ -155,8 +155,6 @@ async function getDashboard(req, res, next) {
     const budget = await Budget.findOne({
       userId,
       isActive: true,
-      startDate: { $lte: new Date() },
-      endDate: { $gte: new Date() },
     }).lean();
 
     if (budget) {

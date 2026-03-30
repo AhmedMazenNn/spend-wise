@@ -284,7 +284,7 @@ export function CategoryBudgetsPage() {
                   category={cat.name}
                   emoji={cat.icon || '📦'}
                   color={cat.color}
-                  spent={categorySpent[cat.name] || 0}
+                  spent={categoryBudgets[cat.id]?.spent ?? (categorySpent[cat.name] || 0)}
                   budget={categoryBudgets[cat.id]?.amount || null}
                   warningThreshold={categoryBudgets[cat.id]?.warningThreshold || 70}
                   startDate={categoryBudgets[cat.id]?.startDate || null}

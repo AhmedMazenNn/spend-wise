@@ -38,6 +38,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
       color: 'bg-blue-50 dark:bg-blue-500/10'
     },
     {
+      title: t('Track Your Income'),
+      description: t('Easily log your income sources and stay on top of your earnings. Categorize them to better understand your cash flow.'),
+      icon: <TrendingUp className="h-12 w-12 text-green-500" />,
+      color: 'bg-green-50 dark:bg-green-500/10'
+    },
+    {
       title: t('Smart Budgets'),
       description: t('Set monthly limits and watch the progress bar change colors as you reach your goals.'),
       icon: <TrendingUp className="h-12 w-12 text-orange-500" />,

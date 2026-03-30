@@ -233,6 +233,45 @@ function Home() {
           variants={containerVariants}
           className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pt-16 lg:pt-0 pb-24"
         >
+          {budget && isExpired && (
+            <motion.div
+              variants={itemVariants}
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 sm:p-5 shadow-sm"
+            >
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-700/50">
+                  <AlertTriangle className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white">
+                    {t('Overall budget has expired')}
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {t('The period for your active budget has ended. You can remove it or set a new one.')}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setTempBudget({
+                    amount: 1000,
+                    startDate: new Date().toISOString().split('T')[0],
+                    endDate: new Date(new Date().setDate(new Date().getDate() + 30))
+                      .toISOString()
+                      .split('T')[0],
+                    warningThreshold: 70,
+                  });
+                  setBudgetError(null);
+                  setShowExpiryConfirm(false);
+                  setIsBudgetModalOpen(true);
+                }}
+                className="w-full sm:w-auto whitespace-nowrap rounded-xl bg-slate-900 dark:bg-white px-4 py-2.5 text-sm font-medium text-white dark:text-slate-900 transition-colors hover:bg-slate-800 dark:hover:bg-slate-100"
+              >
+                {t('Set New Budget')}
+              </button>
+            </motion.div>
+          )}
+
           <motion.header
             variants={itemVariants}
             className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"

@@ -15,6 +15,7 @@ export interface CategoryBudget {
   startDate: string
   endDate: string
   warningThreshold: number
+  spent?: number
 }
 
 export async function setCategoryBudget(data: {

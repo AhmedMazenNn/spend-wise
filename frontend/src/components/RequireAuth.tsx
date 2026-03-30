@@ -2,6 +2,8 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { LoadingScreen } from './LoadingScreen'
 
+import { GlobalAlerts } from './GlobalAlerts'
+
 export function RequireAuth() {
   const { isAuthenticated, loading } = useAuth()
   const location = useLocation()
@@ -18,5 +20,10 @@ export function RequireAuth() {
     return <Navigate to="/" replace state={{ from: location }} />
   }
 
-  return <Outlet />
+  return (
+    <>
+      <GlobalAlerts />
+      <Outlet />
+    </>
+  )
 }
