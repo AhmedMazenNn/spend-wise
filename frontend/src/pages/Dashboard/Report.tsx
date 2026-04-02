@@ -268,20 +268,20 @@ export function Report() {
   }, [displayExpenses])
 
   const stats = useMemo(() => {
-    const totalSpent = filteredExpenses.reduce((acc, curr) => acc + curr.amount, 0)
+    const totalSpent = filteredExpenses.reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
     
     // Status-based income totaling
     const receivedIncome = filteredIncomes
       .filter(inc => inc.status === 'received')
-      .reduce((acc, curr) => acc + curr.amount, 0)
+      .reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
     
     const pendingIncome = filteredIncomes
       .filter(inc => inc.status === 'pending')
-      .reduce((acc, curr) => acc + curr.amount, 0)
+      .reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
     
     const expectedIncome = filteredIncomes
       .filter(inc => inc.status === 'expected')
-      .reduce((acc, curr) => acc + curr.amount, 0)
+      .reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
     
     const totalIncome = receivedIncome
     const netBalance = totalIncome - totalSpent
@@ -302,7 +302,7 @@ export function Report() {
 
     const dailyTotals: Record<string, number> = {}
     filteredExpenses.forEach((tx) => {
-      dailyTotals[tx.date] = (dailyTotals[tx.date] || 0) + tx.amount
+      dailyTotals[tx.date] = (dailyTotals[tx.date] || 0) + Number(tx.amount || 0)
     })
 
     let highestDay = { date: '', amount: 0 }
@@ -312,7 +312,7 @@ export function Report() {
 
     const categoryTotals: Record<string, number> = {}
     filteredExpenses.forEach((tx) => {
-      categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + tx.amount
+      categoryTotals[tx.category] = (categoryTotals[tx.category] || 0) + Number(tx.amount || 0)
     })
 
     const topCategoryEntry = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0]
@@ -335,7 +335,7 @@ export function Report() {
 
     const dailyMap: Record<string, number> = {}
     filteredExpenses.forEach((tx) => {
-      dailyMap[tx.date] = (dailyMap[tx.date] || 0) + tx.amount
+      dailyMap[tx.date] = (dailyMap[tx.date] || 0) + Number(tx.amount || 0)
     })
 
     const dailySpending = Object.entries(dailyMap)
@@ -362,7 +362,7 @@ export function Report() {
         
         const spent = displayExpenses
           .filter(e => e.category === catName && e.date >= budgetStart && e.date <= budgetEnd)
-          .reduce((acc, curr) => acc + curr.amount, 0)
+          .reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
 
         const remaining = b.amount > 0 ? b.amount - spent : 0
         const isExpired = new Date(b.endDate) < now
@@ -406,7 +406,7 @@ export function Report() {
       if (overlaps) {
         overallBudgetSpent = displayExpenses
           .filter(e => e.date >= bStart && e.date <= bEnd)
-          .reduce((acc, curr) => acc + curr.amount, 0)
+          .reduce((acc, curr) => acc + Number(curr.amount || 0), 0)
         
         overallBudgetRemaining = overallBudgetLimit > 0 ? overallBudgetLimit - overallBudgetSpent : 0
         overallIsExpired = new Date(overallBudget.endDate) < now
@@ -480,9 +480,9 @@ export function Report() {
       const statsX = [margin + 10, margin + 65, margin + 120]
       const labels = [tEn('Total Income'), tEn('Total Spent'), tEn('Net Balance')]
       const values = [
-        `$${stats.totalIncome.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
-        `$${stats.totalSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
-        `$${stats.netBalance.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`
+        `$${Number(stats.totalIncome).toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+        `$${Number(stats.totalSpent).toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+        `${stats.netBalance < 0 ? '-' : ''}$${Math.abs(stats.netBalance).toLocaleString(enLocale, { minimumFractionDigits: 2 })}`
       ]
 
       doc.setFontSize(9)
@@ -499,8 +499,8 @@ export function Report() {
         doc.setFontSize(8)
         doc.setTextColor(148, 163, 184)
         const note: string[] = []
-        if (stats.pendingIncome > 0) note.push(`$${stats.pendingIncome.toLocaleString(enLocale)} ${tEn('pending')}`)
-        if (stats.expectedIncome > 0) note.push(`$${stats.expectedIncome.toLocaleString(enLocale)} ${tEn('expected')}`)
+        if (stats.pendingIncome > 0) note.push(`$${Number(stats.pendingIncome).toLocaleString(enLocale)} ${tEn('pending')}`)
+        if (stats.expectedIncome > 0) note.push(`$${Number(stats.expectedIncome).toLocaleString(enLocale)} ${tEn('expected')}`)
         doc.text(fixArabic(note.join('  •  ')), margin + 10, 71)
       }
 
@@ -570,7 +570,8 @@ export function Report() {
           margin: { left: margin, right: margin },
           styles: { fontSize: 9 },
         })
-        currentY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
+        const finalY = (doc as any).lastAutoTable?.finalY;
+        currentY = finalY ? finalY + 15 : currentY + 40;
       }
 
       // --- EXPENSES TABLE ---
@@ -589,7 +590,7 @@ export function Report() {
           new Date(tx.date).toLocaleDateString(enLocale),
           fixArabic(tx.title),
           fixArabic(tEn(tx.category)),
-          `$${tx.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+          `$${Number(tx.amount || 0).toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
           fixArabic(tx.note || ''),
         ]),
         headStyles: { fillColor: [15, 23, 42], textColor: 255, font: 'Amiri' },
@@ -599,7 +600,8 @@ export function Report() {
       })
 
       // --- CATEGORY BREAKDOWN TABLE & PIE CHART ---
-      currentY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
+      const finalY = (doc as any).lastAutoTable?.finalY;
+      currentY = finalY ? finalY + 15 : currentY + 60;
       if (currentY > 210) {
         doc.addPage()
         currentY = 20
