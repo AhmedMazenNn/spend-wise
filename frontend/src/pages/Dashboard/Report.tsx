@@ -68,7 +68,7 @@ function getPeriodLabel(
   selectedDate: string,
   dateRange: { start: string; end: string },
   locale: string,
-  t: any
+  t: (key: string) => string
 ): string {
   switch (filterMode) {
     case 'month':
@@ -95,7 +95,7 @@ function getFriendlyFilename(
   selectedMonth: string,
   selectedDate: string,
   dateRange: { start: string; end: string },
-  t: any,
+  t: (key: string) => string,
   ext: 'pdf' | 'xlsx'
 ): string {
   const locale = 'en-US'
@@ -123,7 +123,7 @@ function getFriendlyFilename(
 
 const isArabicText = (value: string) => /[\u0600-\u06FF]/.test(value)
 
-const fixArabic = (value: any) => {
+const fixArabic = (value: unknown) => {
   if (value === null || value === undefined) return ''
   const str = String(value)
 
@@ -444,7 +444,7 @@ export function Report() {
       overallThreshold,
       overallIsExpired
     }
-  }, [displayExpenses, filteredExpenses, filteredIncomes, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget, now])
+  }, [displayExpenses, filteredExpenses, filteredIncomes, filterMode, selectedMonth, dateRange, allBudgets, categories, overallBudget, now, categoryColorMap, end, start])
 
 
   const handleExportPDF = async () => {
@@ -498,15 +498,59 @@ export function Report() {
       if (stats.pendingIncome > 0 || stats.expectedIncome > 0) {
         doc.setFontSize(8)
         doc.setTextColor(148, 163, 184)
-        let note = []
+        const note: string[] = []
         if (stats.pendingIncome > 0) note.push(`$${stats.pendingIncome.toLocaleString(enLocale)} ${tEn('pending')}`)
         if (stats.expectedIncome > 0) note.push(`$${stats.expectedIncome.toLocaleString(enLocale)} ${tEn('expected')}`)
         doc.text(fixArabic(note.join('  •  ')), margin + 10, 71)
       }
 
-      // --- INCOMES TABLE (if any) ---
+      // --- OVERALL BUDGET SECTION ---
       let currentY = 85
+      if (stats.overallBudgetLimit > 0) {
+        doc.setFillColor(241, 245, 249)
+        doc.roundedRect(margin, 80, 170, 28, 3, 3, 'F')
+        
+        doc.setFontSize(11)
+        doc.setTextColor(30, 41, 59)
+        doc.text(fixArabic(tEn('Overall Budget Performance')), margin + 8, 88)
+        
+        doc.setFontSize(8)
+        doc.setTextColor(100, 116, 139)
+        const bStart = stats.overallBudgetStart ? new Date(stats.overallBudgetStart).toLocaleDateString(enLocale) : '-'
+        const bEnd = stats.overallBudgetEnd ? new Date(stats.overallBudgetEnd).toLocaleDateString(enLocale) : '-'
+        doc.text(fixArabic(`${tEn('Period')}: ${bStart} - ${bEnd}`), margin + 8, 93)
+
+        const budgetStatsX = [margin + 8, margin + 48, margin + 88, margin + 128]
+        const budgetLabels = [tEn('Limit'), tEn('Spent'), tEn('Remaining'), tEn('Status')]
+        const budgetValues = [
+          `$${stats.overallBudgetLimit.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+          `$${stats.overallBudgetSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+          `$${stats.overallBudgetRemaining.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+          tEn(stats.overallStatus)
+        ]
+
+        budgetLabels.forEach((label, i) => {
+          doc.setFontSize(7)
+          doc.setTextColor(100, 116, 139)
+          doc.text(fixArabic(label), budgetStatsX[i], 100)
+          doc.setFontSize(9)
+          if (i === 3) {
+            const statusColor = stats.overallStatus === 'Over' ? [239, 68, 68] : stats.overallStatus === 'Warning' ? [245, 158, 11] : [16, 185, 129]
+            doc.setTextColor(statusColor[0], statusColor[1], statusColor[2])
+          } else {
+            doc.setTextColor(15, 23, 42)
+          }
+          doc.text(fixArabic(budgetValues[i]), budgetStatsX[i], 105)
+        })
+        currentY = 118
+      }
+
+      // --- INCOMES TABLE (if any) ---
       if (filteredIncomes.length > 0) {
+        if (currentY > 240) {
+          doc.addPage()
+          currentY = 20
+        }
         doc.setFontSize(14)
         doc.setTextColor(15, 23, 42)
         doc.text(fixArabic(tEn('Incomes')), margin, currentY)
@@ -526,7 +570,7 @@ export function Report() {
           margin: { left: margin, right: margin },
           styles: { fontSize: 9 },
         })
-        currentY = (doc as any).lastAutoTable.finalY + 15
+        currentY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
       }
 
       // --- EXPENSES TABLE ---
@@ -552,6 +596,122 @@ export function Report() {
         bodyStyles: { font: 'Amiri' },
         margin: { left: margin, right: margin },
         styles: { fontSize: 9 },
+      })
+
+      // --- CATEGORY BREAKDOWN TABLE & PIE CHART ---
+      currentY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 15
+      if (currentY > 210) {
+        doc.addPage()
+        currentY = 20
+      }
+      
+      doc.setFontSize(14)
+      doc.setTextColor(15, 23, 42)
+      doc.text(fixArabic(tEn('Category Breakdown & Budgets')), margin, currentY)
+
+      // Draw Pie Chart
+      const pieRadius = 25;
+      const pieCenterX = margin + 30;
+      const pieCenterY = currentY + 10 + pieRadius;
+      
+      let startAngle = -Math.PI / 2;
+      stats.categoryList.forEach((item) => {
+        if (item.percentage === 0) return;
+        
+        doc.setFillColor(item.color || '#94A3B8');
+        const sliceAngle = (item.percentage / 100) * (2 * Math.PI);
+        const endAngle = startAngle + sliceAngle;
+        
+        const steps = Math.max(10, Math.floor((sliceAngle / (2 * Math.PI)) * 100));
+        let currentAngle = startAngle;
+        const stepSize = sliceAngle / steps;
+        
+        for (let i = 0; i < steps; i++) {
+          const nextAngle = currentAngle + stepSize;
+          const x2 = pieCenterX + Math.cos(currentAngle) * pieRadius;
+          const y2 = pieCenterY + Math.sin(currentAngle) * pieRadius;
+          const x3 = pieCenterX + Math.cos(nextAngle) * pieRadius;
+          const y3 = pieCenterY + Math.sin(nextAngle) * pieRadius;
+          doc.triangle(pieCenterX, pieCenterY, x2, y2, x3, y3, 'F');
+          currentAngle = nextAngle;
+        }
+        startAngle = endAngle;
+      });
+
+      // Draw Legend to the right of the Pie Chart
+      let legendX = pieCenterX + pieRadius + 15;
+      let legendY = currentY + 15;
+      doc.setFontSize(9);
+      stats.categoryList.slice(0, 10).forEach((item) => {
+        if (legendY > currentY + 10 + pieRadius * 2) {
+            legendX += 45;
+            legendY = currentY + 15;
+        }
+        doc.setFillColor(item.color || '#94A3B8');
+        doc.rect(legendX, legendY - 3, 4, 4, 'F');
+        doc.setTextColor(15, 23, 42);
+        const text = `${fixArabic(tEn(item.name))} (${item.percentage.toFixed(1)}%)`;
+        doc.text(text, legendX + 6, legendY);
+        legendY += 6;
+      });
+
+      currentY = pieCenterY + pieRadius + 15;
+
+      autoTable(doc, {
+        startY: currentY,
+        head: [[
+          tEn('Category'), 
+          tEn('Percentage'), 
+          tEn('Total Paid'), 
+          tEn('Budget Limit'), 
+          tEn('Spent in Budget'), 
+          tEn('Budget Status'), 
+          tEn('Start Date'), 
+          tEn('End Date')
+        ].map(fixArabic)],
+        body: [
+          ...stats.categoryList.map((c) => {
+            const bdg = stats.budgetPerformance.find((b) => b.name === c.name);
+            return [
+              { content: fixArabic(tEn(c.name)), styles: { textColor: c.color || '#333333', fontStyle: 'bold' as const } },
+              `${c.percentage.toFixed(1)}%`,
+              `$${c.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
+              bdg && bdg.limit > 0 ? `$${bdg.limit.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-',
+              bdg ? `$${bdg.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-',
+              bdg ? ({
+                content: fixArabic(tEn(bdg.status)),
+                styles: { 
+                  textColor: bdg.status === 'Over' ? '#EF4444' : bdg.status === 'Warning' ? '#F59E0B' : '#10B981',
+                  fontStyle: 'bold' as const
+                }
+              }) : '-',
+              bdg ? new Date(bdg.startDate).toLocaleDateString(enLocale) : '-',
+              bdg ? new Date(bdg.endDate).toLocaleDateString(enLocale) : '-',
+            ];
+          }),
+          // Add Overall Budget row at the end
+          [
+            { content: fixArabic(tEn('Overall Budget')), styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' as const } },
+            { content: '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
+            { content: `$${stats.totalSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' as const } },
+            { content: stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
+            { content: stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
+            stats.overallBudgetLimit > 0 ? ({
+              content: fixArabic(tEn(stats.overallStatus)),
+              styles: { 
+                textColor: stats.overallStatus === 'Over' ? '#EF4444' : stats.overallStatus === 'Warning' ? '#F59E0B' : '#10B981',
+                fontStyle: 'bold' as const,
+                fillColor: [241, 245, 249]
+              }
+            }) : { content: '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
+            { content: stats.overallBudgetStart ? new Date(stats.overallBudgetStart).toLocaleDateString(enLocale) : '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
+            { content: stats.overallBudgetEnd ? new Date(stats.overallBudgetEnd).toLocaleDateString(enLocale) : '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
+          ]
+        ],
+        headStyles: { fillColor: [59, 130, 246], textColor: 255, font: 'Amiri' },
+        bodyStyles: { font: 'Amiri' },
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 8 },
       })
 
       const fileName = getFriendlyFilename(filterMode, selectedMonth, selectedDate, dateRange, tEn, 'pdf')
