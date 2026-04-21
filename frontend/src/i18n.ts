@@ -539,6 +539,7 @@ const resources = {
       "Date Warning": "تحذير بشأن التاريخ",
       "Verification Failed": "فشل التحقق",
       "Oops!": "عذراً!",
+      "This color is already used, but you can reuse it": "هذا اللون مستخدم بالفعل، ولكن يمكنك إعادة استخدامه",
       "Track Your Income": "تتبع دخلك",
       "Easily log your income sources and stay on top of your earnings. Categorize them to better understand your cash flow.": "سجّل مصادر دخلك بسهولة وتابع أرباحك باستمرار. صنّفها لتفهم تدفقاتك النقدية بشكل أفضل.",
       "The verification link is invalid or has expired.": "رابط التحقق غير صالح أو منتهي الصلاحية.",

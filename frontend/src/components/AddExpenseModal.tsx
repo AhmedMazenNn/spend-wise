@@ -4,6 +4,7 @@ import { X, Check, Edit2, Palette, Smile, Trash2 } from 'lucide-react'
 import EmojiPicker, { type EmojiClickData } from 'emoji-picker-react'
 import { useTranslation } from 'react-i18next'
 import { createExpense } from '../api/expenses'
+import { getStoredUser } from '../api/auth'
 import { fetchCategories, updateCategory, deleteCategory } from '../api/categories'
 import type { Category } from '../api/categories'
 
@@ -30,6 +31,14 @@ const PRESET_COLORS = [
   '#F97316',
   '#84CC16',
   '#06B6D4',
+  '#D946EF',
+  '#000000',
+  '#7C3AED',
+  '#DB2777',
+  '#EA580C',
+  '#65A30D',
+  '#0891B2',
+  '#4F46E5',
 ]
 
 export function AddExpenseModal({
@@ -78,10 +87,16 @@ export function AddExpenseModal({
   }
 
   useEffect(() => {
-    if (categories.length > 0 && !categoryId) {
-      setCategoryId(categories[0].id)
+    if (categories.length > 0 && categoryId) {
+      const user = getStoredUser()
+      const isAdmin = (user?.role || '').toLowerCase() === 'admin'
+      
+      const selectedCat = categories.find((cat) => cat.id === categoryId)
+      if (isAdmin && selectedCat?.name === 'Transport' && !title) {
+        setTitle('Mashro3')
+      }
     }
-  }, [categories, categoryId])
+  }, [categoryId, categories, t])
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     if (editingCategoryId) {
@@ -455,6 +470,19 @@ export function AddExpenseModal({
                                 </button>
                               ))}
                             </div>
+                            {(() => {
+                              const currentColor = editingCategoryId ? editColor : customColor;
+                              const isTaken = categories.some(cat => cat.color === currentColor && cat.id !== editingCategoryId);
+                              if (isTaken) {
+                                return (
+                                  <p className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                                    {t('This color is already used, but you can reuse it')}
+                                  </p>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                         </div>
 

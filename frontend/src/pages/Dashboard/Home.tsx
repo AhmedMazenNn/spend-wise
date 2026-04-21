@@ -16,7 +16,7 @@ import {
 import { Plus, X, Wallet, Trash2, AlertTriangle } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 
-import Sidebar from '../../components/Sidebar'
+import { Sidebar } from '../../components/Sidebar'
 import { AddExpenseModal } from '../../components/AddExpenseModal'
 import Onboarding from '../../components/Onboarding'
 import { useExpenseData, type TimePeriod } from '../../hooks/useExpenseData'
@@ -199,24 +199,6 @@ function Home() {
     ? `${Math.min(Math.max(budgetStats.percentage, 0), 100)}%`
     : '0%'
 
-  if (loading && !data) {
-    return <LoadingScreen />
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen bg-main">
-        <Sidebar />
-        <main
-          dir={isArabic ? 'rtl' : 'ltr'}
-          className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} p-4 sm:p-6 lg:p-8 flex items-center justify-center`}
-        >
-          <div className="text-red-600 dark:text-red-400">{error}</div>
-        </main>
-      </div>
-    )
-  }
-
   return (
     <div className="flex min-h-screen bg-main">
       <Sidebar />
@@ -227,12 +209,21 @@ function Home() {
         dir={isArabic ? 'rtl' : 'ltr'}
         className={`flex-1 ${isArabic ? 'lg:mr-64' : 'lg:ml-64'} h-screen overflow-y-auto p-4 sm:p-6 lg:p-8`}
       >
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pt-16 lg:pt-0 pb-24"
-        >
+        {error ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-red-500 font-medium bg-red-50 dark:bg-red-500/10 px-6 py-4 rounded-2xl border border-red-200 dark:border-red-500/20 shadow-sm">
+              {error}
+            </div>
+          </div>
+        ) : loading && !data ? (
+          <LoadingScreen />
+        ) : (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="max-w-7xl mx-auto space-y-6 sm:space-y-8 pt-16 lg:pt-0 pb-24"
+          >
           {budget && isExpired && (
             <motion.div
               variants={itemVariants}
@@ -934,6 +925,7 @@ function Home() {
             </div>
           </motion.div>
         </motion.div>
+       )}
       </main>
 
       <motion.button

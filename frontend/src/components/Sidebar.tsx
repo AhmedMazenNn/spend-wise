@@ -77,7 +77,8 @@ export function Sidebar() {
   const closeMobile = () => setMobileOpen(false)
 
   const toggleLanguage = () => {
-    i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')
+    const nextLang = i18n.language?.startsWith('ar') ? 'en' : 'ar'
+    i18n.changeLanguage(nextLang)
   }
 
   return (

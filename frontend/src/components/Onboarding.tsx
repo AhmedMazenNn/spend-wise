@@ -112,7 +112,10 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete }) => {
             </h2>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => i18n.changeLanguage(i18n.language === 'en' ? 'ar' : 'en')}
+                onClick={() => {
+                  const nextLang = i18n.language?.startsWith('ar') ? 'en' : 'ar'
+                  i18n.changeLanguage(nextLang)
+                }}
                 className="rounded-full p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center"
                 title={t('Switch Language')}
               >

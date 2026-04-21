@@ -162,10 +162,6 @@ export function CategoryBudgetsPage() {
     visible: { y: 0, opacity: 1 },
   }
 
-  if (loading || expensesLoading) {
-    return <LoadingScreen />
-  }
-
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
       <Sidebar />
@@ -176,12 +172,15 @@ export function CategoryBudgetsPage() {
           isArabic ? 'lg:mr-64' : 'lg:ml-64'
         } p-4 sm:p-6 lg:p-8 overflow-y-auto h-screen`}
       >
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={containerVariants}
-          className="max-w-7xl mx-auto space-y-8 pb-12 pt-16 lg:pt-0"
-        >
+        {loading || expensesLoading ? (
+          <LoadingScreen />
+        ) : (
+          <motion.div
+            initial="hidden"
+            animate="visible"
+            variants={containerVariants}
+            className="max-w-7xl mx-auto space-y-8 pb-12 pt-16 lg:pt-0"
+          >
           <motion.header variants={itemVariants} className="space-y-1">
             <h1 className="text-3xl font-bold font-heading text-slate-900 dark:text-white">
               {t('Category Budgets')}
@@ -296,6 +295,7 @@ export function CategoryBudgetsPage() {
             ))}
           </motion.div>
         </motion.div>
+       )}
       </main>
     </div>
   )
