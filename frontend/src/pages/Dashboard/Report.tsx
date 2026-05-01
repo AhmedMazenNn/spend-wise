@@ -675,16 +675,17 @@ export function Report() {
           ...stats.categoryList.map((c) => {
             const bdg = stats.budgetPerformance.find((b) => b.name === c.name);
             return [
-              { content: fixArabic(tEn(c.name)), styles: { textColor: c.color || '#333333', fontStyle: 'bold' as const } },
+              { content: fixArabic(tEn(c.name)), styles: { textColor: c.color || '#333333', font: 'Amiri', fontStyle: 'normal' as const } },
               `${c.percentage.toFixed(1)}%`,
               `$${c.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`,
               bdg && bdg.limit > 0 ? `$${bdg.limit.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-',
               bdg ? `$${bdg.amount.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-',
               bdg ? ({
                 content: fixArabic(tEn(bdg.status)),
-                styles: { 
+                styles: {
+                  font: 'Amiri',
+                  fontStyle: 'normal' as const,
                   textColor: bdg.status === 'Over' ? '#EF4444' : bdg.status === 'Warning' ? '#F59E0B' : '#10B981',
-                  fontStyle: 'bold' as const
                 }
               }) : '-',
               bdg ? new Date(bdg.startDate).toLocaleDateString(enLocale) : '-',
@@ -693,16 +694,17 @@ export function Report() {
           }),
           // Add Overall Budget row at the end
           [
-            { content: fixArabic(tEn('Overall Budget')), styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' as const } },
+            { content: fixArabic(tEn('Overall Budget')), styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], font: 'Amiri', fontStyle: 'normal' as const } },
             { content: '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
-            { content: `$${stats.totalSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], fontStyle: 'bold' as const } },
+            { content: `$${stats.totalSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}`, styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42], font: 'Amiri', fontStyle: 'normal' as const } },
             { content: stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetLimit.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
             { content: stats.overallBudgetLimit > 0 ? `$${stats.overallBudgetSpent.toLocaleString(enLocale, { minimumFractionDigits: 2 })}` : '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
             stats.overallBudgetLimit > 0 ? ({
               content: fixArabic(tEn(stats.overallStatus)),
-              styles: { 
+              styles: {
+                font: 'Amiri',
+                fontStyle: 'normal' as const,
                 textColor: stats.overallStatus === 'Over' ? '#EF4444' : stats.overallStatus === 'Warning' ? '#F59E0B' : '#10B981',
-                fontStyle: 'bold' as const,
                 fillColor: [241, 245, 249]
               }
             }) : { content: '-', styles: { fillColor: [241, 245, 249], textColor: [15, 23, 42] } },
