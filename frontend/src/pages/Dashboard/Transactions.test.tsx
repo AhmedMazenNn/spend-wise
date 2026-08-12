@@ -105,4 +105,43 @@ describe('TransactionsPage monthly filter', () => {
       )
     })
   })
+
+  it('falls back to period "all" when the month input is cleared', async () => {
+    renderTransactions()
+    fireEvent.click(screen.getByText('Specific Month'))
+    const input = document.querySelector('input[type="month"]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '2026-02' } })
+    await waitFor(() => {
+      expect(fetchExpensesMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ period: 'custom' }),
+      )
+    })
+
+    fireEvent.change(input, { target: { value: '' } })
+    await waitFor(() => {
+      const params = fetchExpensesMock.mock.calls.at(-1)?.[0]
+      expect(params).toEqual(expect.objectContaining({ period: 'all' }))
+      expect(params).not.toHaveProperty('startDate')
+      expect(params).not.toHaveProperty('endDate')
+    })
+  })
+
+  it('returns to a preset period after month mode', async () => {
+    renderTransactions()
+    fireEvent.click(screen.getByText('Specific Month'))
+    const input = document.querySelector('input[type="month"]') as HTMLInputElement
+    fireEvent.change(input, { target: { value: '2026-02' } })
+    await waitFor(() => {
+      expect(fetchExpensesMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ period: 'custom' }),
+      )
+    })
+
+    fireEvent.click(screen.getByText('Month'))
+    await waitFor(() => {
+      expect(fetchExpensesMock).toHaveBeenLastCalledWith(
+        expect.objectContaining({ period: 'month' }),
+      )
+    })
+  })
 })
