@@ -10,24 +10,26 @@
 
 ## Global Constraints
 
-- Frontend only: `frontend/src/pages/Dashboard/Transactions.tsx`, `frontend/src/i18n.ts`, `frontend/src/pages/Dashboard/Transactions.test.tsx`.
+- Frontend only: `frontend/src/utils/date.ts` (new, holds `monthToRange`), `frontend/src/pages/Dashboard/Transactions.tsx`, `frontend/src/i18n.ts`, `frontend/src/pages/Dashboard/Transactions.test.tsx`.
 - Backend untouched. Existing `Month` preset pill keeps its "last 30 days" meaning.
 - i18n keys: en `"Specific Month"`, ar `"شهر محدد"`.
 - Tests run via Vitest (`npm test` = `vitest run`), globals enabled (`describe`/`it`/`expect`/`vi` available without import, but import explicitly per codebase convention in `Report.test.tsx`).
 - KNOWN PRE-EXISTING FAILURES (fail on unmodified `main`, out of scope): `Report.test.tsx` crashes at `lottie-web` module evaluation in jsdom (`Cannot set properties of null (setting 'fillStyle')`); `src/api/auth.test.ts` fails on localStorage assertions. The new `Transactions.test.tsx` must mock `../../components/LottieIcon` and `../../components/LoadingScreen` so the same crash doesn't affect it.
 - No new dependencies.
+- DEVIATION (user-approved 2026-08-13): `monthToRange` lives in its own file `frontend/src/utils/date.ts` (not in `Transactions.tsx`), because exporting a non-component from `Transactions.tsx` triggers the enabled `react-refresh/only-export-components` lint error. Tests import it from `../../utils/date`.
 
 ---
 
 ### Task 1: `monthToRange` helper with unit tests
 
 **Files:**
-- Modify: `frontend/src/pages/Dashboard/Transactions.tsx` (add exported helper after `PERIOD_MAP`, line ~32)
+- Create: `frontend/src/utils/date.ts` (exported helper)
+- Modify: `frontend/src/pages/Dashboard/Transactions.tsx` (none in Task 1 — Task 2 wires it in)
 - Test: `frontend/src/pages/Dashboard/Transactions.test.tsx` (create)
 
 **Interfaces:**
 - Consumes: nothing
-- Produces: `export function monthToRange(month: string): { start: string; end: string }`
+- Produces: `export function monthToRange(month: string): { start: string; end: string }` from `frontend/src/utils/date.ts`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -35,7 +37,7 @@ Create `frontend/src/pages/Dashboard/Transactions.test.tsx`:
 
 ```tsx
 import { describe, it, expect, vi } from 'vitest'
-import { monthToRange } from './Transactions'
+import { monthToRange } from '../../utils/date'
 
 vi.mock('../../components/LottieIcon', () => ({
   LottieIcon: () => null,
@@ -83,11 +85,11 @@ Note: the two `vi.mock` calls are REQUIRED. `Transactions.tsx` transitively impo
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd frontend && npx vitest run src/pages/Dashboard/Transactions.test.tsx`
-Expected: FAIL — `monthToRange` is not exported from `./Transactions`.
+Expected: FAIL — `monthToRange` is not exported from `../../utils/date`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-In `Transactions.tsx`, immediately after the `PERIOD_MAP` object (after line 32), add:
+Create `frontend/src/utils/date.ts`:
 
 ```ts
 export function monthToRange(month: string): { start: string; end: string } {
@@ -108,7 +110,7 @@ Expected: PASS — all 3 assertions green.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add frontend/src/pages/Dashboard/Transactions.tsx frontend/src/pages/Dashboard/Transactions.test.tsx
+git add frontend/src/utils/date.ts frontend/src/pages/Dashboard/Transactions.test.tsx
 git commit -m "feat(transactions): add monthToRange helper"
 ```
 
@@ -117,12 +119,12 @@ git commit -m "feat(transactions): add monthToRange helper"
 ### Task 2: Monthly filter mode, UI, and i18n
 
 **Files:**
-- Modify: `frontend/src/pages/Dashboard/Transactions.tsx` (type, state, fetchParams, UI)
+- Modify: `frontend/src/pages/Dashboard/Transactions.tsx` (type, state, fetchParams, UI; import `monthToRange` from `../../utils/date`)
 - Modify: `frontend/src/i18n.ts` (en + ar keys)
 - Test: `frontend/src/pages/Dashboard/Transactions.test.tsx` (add component tests)
 
 **Interfaces:**
-- Consumes: `monthToRange(month: string): { start: string; end: string }` from Task 1.
+- Consumes: `monthToRange(month: string): { start: string; end: string }` from `../../utils/date` (Task 1).
 - Produces: `FilterMode = 'preset' | 'custom' | 'month'`, `selectedMonth: string` state, `fetchExpenses` called with `{ period: 'custom', startDate, endDate, search?, limit: 500 }` when month mode active.
 
 - [ ] **Step 1: Write the failing component test**
@@ -137,7 +139,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '../../context/AuthContext'
 import { ThemeProvider } from '../../context/ThemeContext'
 import '../../i18n'
-import { monthToRange, TransactionsPage } from './Transactions'
+import { monthToRange } from '../../utils/date'
+import { TransactionsPage } from './Transactions'
 
 vi.mock('../../components/LottieIcon', () => ({
   LottieIcon: () => null,
@@ -263,6 +266,12 @@ const [selectedMonth, setSelectedMonth] = useState(() => {
 })
 ```
 
+Also add the import at the top of `Transactions.tsx` (with the other `../../api/...` imports):
+
+```ts
+import { monthToRange } from '../../utils/date'
+```
+
 **3c.** Update the `fetchParams` memo (lines 62-77) to add a `'month'` branch:
 
 ```ts
@@ -369,3 +378,5 @@ Expected: `Transactions.test.tsx` PASS. Two PRE-EXISTING failures will remain �
 git add frontend/src/pages/Dashboard/Transactions.tsx frontend/src/i18n.ts frontend/src/pages/Dashboard/Transactions.test.tsx
 git commit -m "feat(transactions): add monthly filter with month picker"
 ```
+
+Note: `frontend/src/utils/date.ts` was already committed in Task 1 — no changes to it here.
