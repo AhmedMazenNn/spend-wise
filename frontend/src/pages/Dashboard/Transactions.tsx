@@ -20,6 +20,7 @@ import {
 import { fetchCategories } from '../../api/categories'
 import type { Expense } from '../../api/expenses'
 import type { Category } from '../../api/categories'
+import { monthToRange } from '../../utils/date'
 
 type TimePeriod = 'Today' | 'Week' | 'Month' | 'All'
 type FilterMode = 'preset' | 'custom' | 'month'
@@ -29,15 +30,6 @@ const PERIOD_MAP: Record<TimePeriod, string> = {
   Week: 'week',
   Month: 'month',
   All: 'all',
-}
-
-export function monthToRange(month: string): { start: string; end: string } {
-  const [year, monthNum] = month.split('-').map(Number)
-  const lastDay = new Date(year, monthNum, 0).getDate()
-  return {
-    start: `${month}-01`,
-    end: `${month}-${String(lastDay).padStart(2, '0')}`,
-  }
 }
 
 export function TransactionsPage() {

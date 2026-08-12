@@ -5,7 +5,8 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from '../../context/AuthContext'
 import { ThemeProvider } from '../../context/ThemeContext'
 import '../../i18n'
-import { monthToRange, TransactionsPage } from './Transactions'
+import { monthToRange } from '../../utils/date'
+import { TransactionsPage } from './Transactions'
 
 vi.mock('../../components/LottieIcon', () => ({
   LottieIcon: () => null,
