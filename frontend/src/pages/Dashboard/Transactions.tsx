@@ -20,9 +20,10 @@ import {
 import { fetchCategories } from '../../api/categories'
 import type { Expense } from '../../api/expenses'
 import type { Category } from '../../api/categories'
+import { monthToRange } from '../../utils/date'
 
 type TimePeriod = 'Today' | 'Week' | 'Month' | 'All'
-type FilterMode = 'preset' | 'custom'
+type FilterMode = 'preset' | 'custom' | 'month'
 
 const PERIOD_MAP: Record<TimePeriod, string> = {
   Today: 'today',
@@ -30,8 +31,6 @@ const PERIOD_MAP: Record<TimePeriod, string> = {
   Month: 'month',
   All: 'all',
 }
-
-
 
 export function TransactionsPage() {
   const { t, i18n } = useTranslation()
@@ -48,6 +47,10 @@ export function TransactionsPage() {
   const [customRange, setCustomRange] = useState({
     start: new Date().toISOString().split('T')[0],
     end: new Date().toISOString().split('T')[0],
+  })
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date()
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   })
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editModal, setEditModal] = useState<Expense | null>(null)
@@ -69,12 +72,29 @@ export function TransactionsPage() {
         limit: 500,
       }
     }
+    if (filterMode === 'month') {
+      if (!selectedMonth) {
+        return {
+          period: 'all' as const,
+          search: searchDebounced || undefined,
+          limit: 500,
+        }
+      }
+      const { start, end } = monthToRange(selectedMonth)
+      return {
+        period: 'custom' as const,
+        startDate: start,
+        endDate: end,
+        search: searchDebounced || undefined,
+        limit: 500,
+      }
+    }
     return {
       period: PERIOD_MAP[selectedPeriod],
       search: searchDebounced || undefined,
       limit: 500,
     }
-  }, [filterMode, selectedPeriod, customRange, searchDebounced])
+  }, [filterMode, selectedPeriod, customRange, selectedMonth, searchDebounced])
 
   const loadExpenses = useCallback(async () => {
     setLoading(true)
@@ -212,6 +232,32 @@ export function TransactionsPage() {
                 >
                   {t('Custom Range')}
                 </button>
+
+                <button
+                  onClick={() => setFilterMode('month')}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
+                    filterMode === 'month'
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                      : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {t('Specific Month')}
+                </button>
+
+                {filterMode === 'month' && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                  >
+                    <input
+                      type="month"
+                      value={selectedMonth}
+                      lang={i18n.language}
+                      onChange={(e) => setSelectedMonth(e.target.value)}
+                      className="px-3 py-2 sm:py-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-700 dark:text-slate-200 w-full sm:w-auto"
+                    />
+                  </motion.div>
+                )}
 
                 {filterMode === 'custom' && (
                   <motion.div
